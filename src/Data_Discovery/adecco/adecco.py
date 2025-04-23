@@ -11,16 +11,18 @@ headers = {"User-Agent": "Mozilla/5.0"}
 
 # Send a GET request to the URL
 response = requests.get(url, headers=headers)
-response.raise_for_status()  # Raise an error for bad status codes
+response.raise_for_status() 
 
 # Parse the HTML content
 soup = BeautifulSoup(response.text, 'html.parser')
 
+section = soup.find("section", class_ = "p0 callout")
 
-# Find the span with class "accordion-title" and text starting with "2023"
-accordion_title = soup.find('span', class_='accordion-title', string=lambda text: text and '2023' in text)
+results_and_reports = section.find_all("div", class_=lambda x: x and "ResultsandReports" in x)
 
-# Alternative approach using more flexible matching
-accordion_title = soup.find('span', class_='accordion-title')
-if accordion_title and '2023' in accordion_title.text:
-    print(accordion_title)
+# Extract the links to the reports
+links = []
+for report in results_and_reports:
+    results_and_reports2 = report.find("span", class_= lambda x: x and "accordion" in x)
+
+print(results_and_reports2)
