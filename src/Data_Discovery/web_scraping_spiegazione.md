@@ -5,7 +5,7 @@ Questo script automatizza l'estrazione di dati finanziari da siti web aziendali.
 
 Lo script accetta un file CSV contenente nomi di aziende
 Utilizza Google Gemini API per generare script di web scraping personalizzati
-Richiede una API key di Google Gemini impostata come variabile d'ambiente o direttamente nel codice
+Richiede una API key di Google Gemini da impostare come variabile d'ambiente in  src/Data_Discovery/config/.env
 
 2. Processo principale
 Per ogni azienda nel CSV, lo script:

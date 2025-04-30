@@ -27,14 +27,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-env_path = Path(__file__).parent / ".env"
-
-
-if env_path.exists():
-    load_dotenv(env_path)
-else:
-    logger.error(f"File .env non trovato in {env_path}")  # noqa: G004
+load_dotenv(dotenv_path="src/Data_Discovery/config/.env")
 
 API_KEY = os.environ.get("GOOGLE_API_KEY")  # Inserisci la tua API key se non è impostata come variabile d'ambiente
 
