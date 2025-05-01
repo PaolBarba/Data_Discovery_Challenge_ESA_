@@ -267,3 +267,5 @@ if __name__ == "__main__":
 # TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile 
 # TODO: Funzioni di load e save dovrebbero essere a parte.
 # TODO: Add the financialscraper.log in a new folder
+# TODO: Add a function that popolates the df to send as as output.
+# TODO: The url with the financial data must be according with the reference year, wheter in the same step or in post processing by openin the file.
