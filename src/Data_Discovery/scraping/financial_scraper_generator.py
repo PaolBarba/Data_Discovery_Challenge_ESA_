@@ -1,7 +1,6 @@
 """Financial Scraper Generator using Google Gemini API."""
 
 import importlib.util
-import json
 import logging
 import os
 import sys
@@ -9,6 +8,7 @@ import sys
 # Add src folder to Python pathimport time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Optional
 
 import google.generativeai as genai
 import pandas as pd
@@ -28,107 +28,94 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 load_dotenv(dotenv_path="src/Data_Discovery/config/.env")
+API_KEY = os.environ.get("GOOGLE_API_KEY")
 
-API_KEY = os.environ.get("GOOGLE_API_KEY")  # Inserisci la tua API key se non è impostata come variabile d'ambiente
 
 genai.configure(api_key=API_KEY)
 
 class FinancialScraperGenerator:
-    def __init__(self, csv_path, output_dir="scrapers", data_dir="financial_data"):
-        """
-        Inizializza il generatore di scraper finanziari.
+    """Financial Scraper Class."""
+
+    def __init__(self, csv_path: str, output_dir : str ="scrapers", data_dir: str ="financial_data"):
+        """Init Class fot the Scraper Generator.
 
         Args:
-            csv_path (str): Percorso al file CSV contenente i nomi delle aziende
-            output_dir (str): Directory dove salvare gli script di scraping generati
-            data_dir (str): Directory dove salvare i dati finanziari estratti
+            csv_path (str): Path for the csv file with all the company names
+            output_dir (str, optional): Directory where to save the scripts. Defaults to "scrapers".
+            data_dir (str, optional): Directory where to store the financial data. Defaults to "financial_data".
         """
         self.csv_path = csv_path
         self.output_dir = output_dir
         self.data_dir = data_dir
 
-        # Crea le directory se non esistono
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         Path(data_dir).mkdir(parents=True, exist_ok=True)
-        
-    def load_companies(self):
-        """Carica i nomi delle aziende dal CSV"""
-        try:
-            df = pd.read_csv(self.csv_path)
-            if "name" not in df.columns:
-                # Se non esiste una colonna "name", usa la prima colonna disponibile
-                company_names = df.iloc[:, 0].tolist()
-                logger.warning(f"Colonna 'name' non trovata, utilizzando la prima colonna: {df.columns[0]}")
-            else:
-                company_names = df["name"].tolist()
-            
-            logger.info(f"Caricate {len(company_names)} aziende dal CSV")
-            return company_names
-        except Exception as e:
-            logger.error(f"Errore durante il caricamento del CSV: {e}")
-            return []
 
-    def generate_prompt(self, company_name):
+    def load_companies(self) -> dict[str,str]:
+        """Load the company names."""
+        df = pd.read_csv(self.csv_path)
+
+        # TODO the csv will be formatted so does not make sense to look for the name column
+        company_names = df.iloc[:, 0].tolist() if "name" not in df.columns else df["name"].tolist()
+        logger.info(f"Caricate {len(company_names)} aziende dal CSV")  # noqa: G004
+        return company_names
+
+    def generate_prompt(self, company_name: str) -> str:
         """
-        Genera un prompt per Gemini per creare uno script di web scraping per l'azienda specificata.
+        It genereate a prompt fot the comany selected by using google gemini.
 
         Args:
-            company_name (str): Nome dell'azienda
+            company_name (str): Nome dell'azienda.
 
         Returns
         -------
             str: Prompt da inviare a Gemini
-        """
-        return generating_prompt(company_name)
+        """  # noqa: D401
+        return generate_scraping_prompt(company_name)
 
-    
-    def query_gemini(self, prompt):
+    def query_gemini(self, prompt:str) -> str:
         """
-        Invia un prompt a Google Gemini e ottiene la risposta
-        
+            Query the gemini AI.
         Args:
-            prompt (str): Prompt da inviare
-            
-        Returns:
-            str: Risposta di Gemini
-        """
+            prompt (str): Prompt to send.
+
+        Returns
+        -------
+            str: Gemini Answer
+        """  # noqa: D205
         try:
-            # Configura il modello
-            model = genai.GenerativeModel('gemini-pro')
-            
+            # COnfigure the model
+            model = genai.GenerativeModel("gemini-pro")
             # Invia la richiesta
             response = model.generate_content(prompt)
-            
-            # Estrai il testo della risposta
+            # Get the full text
             result = response.text
-            
-            # Se la risposta contiene blocchi di codice con markdown, estraiamo solo il codice
+            # if the answer contains the md code, extract it
             if "```python" in result:
                 code_blocks = result.split("```python")
                 if len(code_blocks) > 1:
-                    code = code_blocks[1].split("```")[0].strip()
-                    return code
-            
+                    return code_blocks[1].split("```")[0].strip()
             return result
         except Exception as e:
             logger.error(f"Errore durante la query a Gemini: {e}")
             return None
     
-    def save_script(self, company_name, script_content):
+    def save_script(self, company_name: str, script_content: str)-> str | None:
         """
-        Salva lo script generato su file
-        
+        Save the python script generate in a file.
+
         Args:
             company_name (str): Nome dell'azienda
             script_content (str): Contenuto dello script Python
-            
-        Returns:
+
+        Returns
+        -------
             str: Percorso dello script salvato
         """
         # Sostituisci spazi e caratteri speciali nel nome dell'azienda
-        safe_name = ''.join(c if c.isalnum() else '_' for c in company_name)
-        file_path = os.path.join(self.output_dir, f"{safe_name}_scraper.py")
-        
+        safe_name = "".join(c if c.isalnum() else "_" for c in company_name)
+        file_path = os.path.join(self.output_dir, f"{safe_name}_scraper.py")  # noqa: PTH118
+
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(script_content)
@@ -137,42 +124,42 @@ class FinancialScraperGenerator:
         except Exception as e:
             logger.error(f"Errore nel salvare lo script per {company_name}: {e}")
             return None
-    
-    def execute_script(self, script_path, company_name):
+
+    def execute_script(self, script_path: str, company_name: str) -> pd.DataFrame | None:
         """
-        Esegue lo script di scraping generato
-        
+        Execute the script generated.
+
         Args:
-            script_path (str): Percorso allo script da eseguire
+            script_path (str): Path of the script to execute
             company_name (str): Nome dell'azienda
-            
-        Returns:
-            pd.DataFrame: DataFrame con i dati estratti o None in caso di errore
+
+        Returns
+        -------
+            pd.DataFrame | None: DataFrame with the data
         """
         try:
             # Importa lo script dinamicamente
             spec = importlib.util.spec_from_file_location("scraper_module", script_path)
             scraper_module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(scraper_module)
-            
-            # Ottieni il nome della classe principale (assumendo che segua la convenzione)
-            safe_name = ''.join(c if c.isalnum() else '' for c in company_name)
+
+            safe_name = "".join(c if c.isalnum() else "" for c in company_name)
             class_name = f"{safe_name}Scraper"
-            
-            # Cerca la classe nello script
+
+            # Look for the class into the script
             if hasattr(scraper_module, class_name):
                 scraper_class = getattr(scraper_module, class_name)
                 scraper = scraper_class()
-                
-                # Esegui il metodo di estrazione dati
+
+                # Execute extracted data
                 if hasattr(scraper, "extract_data"):
                     df = scraper.extract_data()
-                    
-                    # Salva i dati
+
+                    # Save the data
+                    # TODO Classe save
                     output_path = os.path.join(self.data_dir, f"{safe_name}_financial_data.csv")
                     df.to_csv(output_path, index=False)
                     logger.info(f"Dati per {company_name} salvati in {output_path}")
-                    
                     return df
                 else:
                     logger.error(f"Il metodo extract_data() non trovato nello script per {company_name}")
@@ -183,13 +170,12 @@ class FinancialScraperGenerator:
         
         return None
     
-    def process_company(self, company_name):
+    def process_company(self, company_name: str)-> tuple[str,pd.DataFrame]:
         """
-        Processa una singola azienda: genera il prompt, ottiene lo script,
-        lo salva ed esegue il web scraping
+        Execute the all pipeline to extract the company finanical Data.
         
         Args:
-            company_name (str): Nome dell'azienda
+            company_name (str): Name of the company
             
         Returns:
             tuple: (nome_azienda, dataframe) con i dati estratti o None
@@ -230,22 +216,18 @@ class FinancialScraperGenerator:
         
         return company_name, None
     
-    def run(self, max_workers=4):
+    def run(self, max_workers: int = 4)-> dict[str, pd.DataFrame]:
         """
-        Esegue il processo completo per tutte le aziende
+        Run the pipeline for all the companies
         
         Args:
-            max_workers (int): Numero massimo di thread da utilizzare
+            max_workers (int): Maximum number of threds to be used
             
         Returns:
-            dict: Dizionario {nome_azienda: dataframe} con i dati estratti
+            dict: Dictonary name of the company and dataframe.
         """
         # Carica le aziende
         company_names = self.load_companies()
-        if not company_names:
-            logger.error("Nessuna azienda trovata nel CSV")
-            return {}
-        
         results = {}
         
         # Processa le aziende in parallelo
@@ -267,19 +249,22 @@ if __name__ == "__main__":
         sys.exit(1)
     
     # Verifica che il percorso del CSV sia fornito come argomento
-    if len(sys.argv) < 2:
-        print("Utilizzo: python financial_scraper_generator.py percorso/al/file.csv [max_workers]")
-        sys.exit(1)
-    
+    # if len(sys.argv) < 2:
+    #     print("Utilizzo: python financial_scraper_generator.py percorso/al/file.csv [max_workers]")
+    #     sys.exit(1)
+    csv_path = "dataset\discovery.csv" # TODO: to be load from a yaml file.
     csv_path = sys.argv[1]
     max_workers = int(sys.argv[2]) if len(sys.argv) > 2 else 4
-    
+
     # Crea ed esegui il generatore
     generator = FinancialScraperGenerator(csv_path)
     results = generator.run(max_workers=max_workers)
-    
+
     # Report finale
-    print("\nRiepilogo:")
-    print(f"- Aziende processate con successo: {len(results)}")
-    print(f"- Dati salvati nella directory: {generator.data_dir}")
-    print(f"- Script generati nella directory: {generator.output_dir}")
+    print(":")
+    print(f"- Company processed succesfully: {len(results)}")
+    print(f"- Data save in the directory: {generator.data_dir}")
+    print(f"- Script generati nella direttori: {generator.output_dir}")
+    
+    
+# TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile 
