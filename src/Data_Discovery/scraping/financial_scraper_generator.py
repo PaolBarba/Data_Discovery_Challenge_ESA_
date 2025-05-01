@@ -8,11 +8,9 @@ import sys
 # Add src folder to Python pathimport time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional
 
 import google.generativeai as genai
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from generating_prompt import generate_scraping_prompt
 from tqdm import tqdm
@@ -99,7 +97,7 @@ class FinancialScraperGenerator:
         except Exception as e:
             logger.error(f"Errore durante la query a Gemini: {e}")
             return None
-    
+
     def save_script(self, company_name: str, script_content: str)-> str | None:
         """
         Save the python script generate in a file.
@@ -169,7 +167,7 @@ class FinancialScraperGenerator:
             logger.error(f"Errore nell'esecuzione dello script per {company_name}: {e}")
         
         return None
-    
+
     def process_company(self, company_name: str)-> tuple[str,pd.DataFrame]:
         """
         Execute the all pipeline to extract the company finanical Data.
@@ -215,7 +213,7 @@ class FinancialScraperGenerator:
             logger.error(f"Errore durante l'elaborazione di {company_name}: {e}")
         
         return company_name, None
-    
+
     def run(self, max_workers: int = 4)-> dict[str, pd.DataFrame]:
         """
         Run the pipeline for all the companies
@@ -247,7 +245,7 @@ if __name__ == "__main__":
     if not API_KEY:
         print("ERRORE: API_KEY non impostata. Imposta la variabile d'ambiente GOOGLE_API_KEY o inseriscila direttamente nello script.")
         sys.exit(1)
-    
+
     # Verifica che il percorso del CSV sia fornito come argomento
     # if len(sys.argv) < 2:
     #     print("Utilizzo: python financial_scraper_generator.py percorso/al/file.csv [max_workers]")
@@ -268,3 +266,4 @@ if __name__ == "__main__":
     
     
 # TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile 
+# TODO: Funzioni di load e save dovrebbero essere a parte.
