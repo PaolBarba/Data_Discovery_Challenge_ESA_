@@ -263,7 +263,7 @@ if __name__ == "__main__":
     print(f"- Company processed succesfully: {len(results)}")
     print(f"- Data save in the directory: {generator.data_dir}")
     print(f"- Script generati nella direttori: {generator.output_dir}")
-    
-    
+
 # TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile 
 # TODO: Funzioni di load e save dovrebbero essere a parte.
+# TODO: Add the financialscraper.log in a new folder
