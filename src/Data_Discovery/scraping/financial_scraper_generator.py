@@ -253,7 +253,7 @@ if __name__ == "__main__":
     # if len(sys.argv) < 2:
     #     print("Utilizzo: python financial_scraper_generator.py percorso/al/file.csv [max_workers]")
     #     sys.exit(1)
-    csv_path = r"dataset\discovery.csv"  # TODO: to be load from a yaml file.
+    csv_path = "dataset/discovery.csv"  # TODO: to be load from a yaml file.
     csv_path = sys.argv[1]
     max_workers = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 

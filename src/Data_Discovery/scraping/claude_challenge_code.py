@@ -14,6 +14,7 @@ import google.generativeai as genai
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from retry import retry
 from tqdm import tqdm
 
@@ -26,7 +27,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configurare l'API di Google Gemini
-API_KEY = os.environ.get("GOOGLE_API_KEY", "")  # Inserisci la tua API key se non è impostata come variabile d'ambiente
+load_dotenv(dotenv_path="src/Data_Discovery/config/.env")
+API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
 
@@ -1358,7 +1360,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Trova fonti finanziarie per multinazionali")
     parser.add_argument(
-        "--input", default="C://Users//raffl//Downloads//discovery.csv", help="File CSV di input con lista di aziende"
+        "--input", default="dataset/discovery.csv", help="File CSV di input con lista di aziende"
     )
     parser.add_argument("--output", default="financial_sources_results.csv", help="File CSV di output")
     parser.add_argument("--source-type", default="Annual Report", help="Tipo di fonte finanziaria da cercare")
