@@ -12,7 +12,19 @@
     ```
 3. Create a virtual environment.
 
+   ```bash
+    python  -m venv data_discovery   
+    ```
+
+    
+
 4. Activate the virtual environment.
+
+
+   ```bash
+     source data_discovery/Scripts/activate
+    ```
+
 
 2. Install the project in editable mode along with development dependencies:
     ```shell
