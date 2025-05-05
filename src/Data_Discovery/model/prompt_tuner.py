@@ -6,6 +6,9 @@ from datetime import datetime
 
 import google.generativeai as genai
 from dotenv import load_dotenv
+from prompts.base_prompt import base_prompt
+from prompts.prompt_improving import improve_prompt
+from utils import laod_config_yaml
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,109 +22,68 @@ load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
-class PromptTuner:
-    """Modulo per l'ottimizzazione automatica dei prompt basata sui feedback"""
 
-    def __init__(self, initial_prompt_template=None):
-        """
-        Inizializza il tuner con un prompt iniziale
+# TODO: The saving must be done in a specific folder, consider creating a folder for the results
+
+class PromptTuner:
+    """Module for automatic prompt optimization based on feedback."""
+
+    def __init__(self, initial_prompt_template:str | None =None):
+        """Initialize the PromptTuner with a default prompt template.
 
         Args:
-            initial_prompt_template (str): Template del prompt iniziale
+            initial_prompt_template (str): Template for the initial prompt.
         """
         self.current_prompt = (
             initial_prompt_template
-            or """
-        SEI UN ESPERTO RICERCATORE FINANZIARIO specializzato nell'individuare fonti ufficiali di dati finanziari per multinazionali.
-
-        TASK: Trova la fonte più autorevole e specifica di dati finanziari per "{company_name}" (tipologia di fonte: {source_type}).
-
-        ISTRUZIONI DETTAGLIATE:
-        1. Identifica il sito web ufficiale dell'azienda
-        2. Cerca la sezione "Investor Relations" o equivalente
-        3. Individua il report finanziario più recente del tipo richiesto
-        4. Fornisci l'URL diretto al documento (preferibilmente PDF) e l'anno fiscale
-
-        FORMATO RISPOSTA:
-        {{
-            "url": "URL diretto al documento finanziario (non alla pagina che lo contiene)",
-            "year": "Anno fiscale del report (YYYY)",
-            "confidence": "ALTA/MEDIA/BASSA",
-            "notes": "Breve spiegazione della tua scelta"
-        }}
-
-        IMPORTANTE:
-        - Preferisci sempre link diretti a PDF o documenti specifici
-        - Verifica che l'URL sia accessibile e non richieda login
-        - Indica l'anno fiscale più recente disponibile
-        """
+            or base_prompt
         )
+        self.config = laod_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
 
         self.tuning_history = []
-        self.model = genai.GenerativeModel("gemini-1.5-pro-latest")
+        self.model = genai.GenerativeModel(self.config["model_name"])
 
-    def generate_prompt(self, company_name, source_type):
+    def generate_prompt(self, company_name:str, source_type:str) -> str:
         """
-        Genera un prompt personalizzato per l'azienda
+        Generate the full prompt for the given company and source type.
 
         Args:
-            company_name (str): Nome dell'azienda
-            source_type (str): Tipo di fonte finanziaria
+            company_name (str): Company name
+            source_type (str): Type of financial source
 
         Returns
         -------
-            str: Prompt completo
+            str: The full prompt with the company name and source type filled in
         """
         return self.current_prompt.format(company_name=company_name, source_type=source_type)
 
     def improve_prompt(self, company_name, source_type, scraping_result, validation_result):
-        """
-        Migliora il prompt in base ai risultati della validazione
+        """Improves the current prompt using feedback from Gemini.
 
         Args:
-            company_name (str): Nome dell'azienda
-            source_type (str): Tipo di fonte finanziaria
-            scraping_result (dict): Risultato dello scraping
-            validation_result (dict): Risultato della validazione
+            company_name (str): Name of the company
+            source_type (str): Type of financial source
+            scraping_result (dict): Result of the web scraping
+            validation_result (dict): Result of the validation
 
         Returns
         -------
-            str: Nuovo prompt ottimizzato
+            str: New improved prompt
         """
-        # Costruisci un prompt per Gemini per migliorare il prompt attuale
-        improvement_prompt = f"""
-        Sei un esperto di ottimizzazione di prompt per ricerca finanziaria.
-
-        CONTESTO:
-        - Azienda: {company_name}
-        - Tipo di fonte richiesta: {source_type}
-        - Prompt attuale utilizzato:
-        ```
-        {self.current_prompt}
-        ```
-
-        - Risultato dello scraping web: {json.dumps(scraping_result, indent=2)}
-        - Feedback della validazione: {json.dumps(validation_result, indent=2)}
-
-        TASK:
-        Migliora il prompt per ottenere risultati più accurati. Il prompt deve essere ottimizzato per:
-        1. Trovare l'URL diretto al documento finanziario più recente
-        2. Identificare correttamente l'anno fiscale
-        3. Aumentare la precisione e l'affidabilità dei risultati
-
-        IMPORTANTE:
-        - Mantieni la struttura JSON della risposta
-        - Aggiungi istruzioni specifiche per superare i problemi riscontrati
-        - Non cambiare completamente il prompt, ma miglioralo in modo incrementale
-
-        RESTITUISCI SOLO IL NUOVO PROMPT MIGLIORATO, NIENT'ALTRO.
-        """
+        # Improves the current prompt using feedback from Gemini
+        improvement_prompt = improve_prompt(
+            company_name=company_name,
+            current_prompt=self.current_prompt,
+            source_type=source_type,
+            scraping_result=scraping_result,
+            validation_result=validation_result,
+        )
 
         try:
             response = self.model.generate_content(improvement_prompt)
             new_prompt = response.text.strip()
 
-            # Salva la storia del tuning per analisi
+            # Save the tuning history
             self.tuning_history.append(
                 {
                     "company": company_name,
@@ -133,11 +95,12 @@ class PromptTuner:
                 }
             )
 
-            # Aggiorna il prompt corrente
+            # Update the current prompt with the new one
             self.current_prompt = new_prompt
 
-            logger.info(f"Prompt migliorato per {company_name}")
-            return new_prompt
+            logger.info("Prompt Improved for the company:", extra={"company": company_name})
         except Exception as e:
-            logger.error(f"Errore durante il miglioramento del prompt: {e}")
-            return self.current_prompt  # Mantieni il prompt attuale in caso di errore
+            logger.exception("An error occurred while improving the prompt", extra={"error": str(e)})
+            return self.current_prompt  # Keep the current prompt in case of error
+
+        return new_prompt
