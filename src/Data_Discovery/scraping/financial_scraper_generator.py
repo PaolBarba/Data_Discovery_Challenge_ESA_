@@ -19,10 +19,7 @@ from tqdm import tqdm
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("financial_scraper.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.FileHandler("financial_scraper.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 load_dotenv(dotenv_path="src/Data_Discovery/config/.env")
@@ -31,10 +28,11 @@ API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 genai.configure(api_key=API_KEY)
 
+
 class FinancialScraperGenerator:
     """Financial Scraper Class."""
 
-    def __init__(self, csv_path: str, output_dir : str ="scrapers", data_dir: str ="financial_data"):
+    def __init__(self, csv_path: str, output_dir: str = "scrapers", data_dir: str = "financial_data"):
         """Init Class fot the Scraper Generator.
 
         Args:
@@ -49,7 +47,7 @@ class FinancialScraperGenerator:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         Path(data_dir).mkdir(parents=True, exist_ok=True)
 
-    def load_companies(self) -> dict[str,str]:
+    def load_companies(self) -> dict[str, str]:
         """Load the company names."""
         df = pd.read_csv(self.csv_path)
 
@@ -71,7 +69,7 @@ class FinancialScraperGenerator:
         """  # noqa: D401
         return generate_scraping_prompt(company_name)
 
-    def query_gemini(self, prompt:str) -> str:
+    def query_gemini(self, prompt: str) -> str:
         """
             Query the gemini AI.
         Args:
@@ -98,7 +96,7 @@ class FinancialScraperGenerator:
             logger.error(f"Errore durante la query a Gemini: {e}")
             return None
 
-    def save_script(self, company_name: str, script_content: str)-> str | None:
+    def save_script(self, company_name: str, script_content: str) -> str | None:
         """
         Save the python script generate in a file.
 
@@ -115,7 +113,7 @@ class FinancialScraperGenerator:
         file_path = os.path.join(self.output_dir, f"{safe_name}_scraper.py")  # noqa: PTH118
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(script_content)
             logger.info(f"Script per {company_name} salvato in {file_path}")
             return file_path
@@ -165,92 +163,97 @@ class FinancialScraperGenerator:
                 logger.error(f"Classe {class_name} non trovata nello script per {company_name}")
         except Exception as e:
             logger.error(f"Errore nell'esecuzione dello script per {company_name}: {e}")
-        
+
         return None
 
-    def process_company(self, company_name: str)-> tuple[str,pd.DataFrame]:
+    def process_company(self, company_name: str) -> tuple[str, pd.DataFrame]:
         """
         Execute the all pipeline to extract the company finanical Data.
-        
+
         Args:
             company_name (str): Name of the company
-            
-        Returns:
+
+        Returns
+        -------
             tuple: (nome_azienda, dataframe) con i dati estratti o None
         """
         logger.info(f"Elaborazione dell'azienda: {company_name}")
-        
+
         try:
             # Controlla se esiste già uno script per questa azienda
-            safe_name = ''.join(c if c.isalnum() else '_' for c in company_name)
+            safe_name = "".join(c if c.isalnum() else "_" for c in company_name)
             existing_script_path = os.path.join(self.output_dir, f"{safe_name}_scraper.py")
-            
+
             if not os.path.exists(existing_script_path):
                 # Genera il prompt
                 prompt = self.generate_prompt(company_name)
-                
+
                 # Ottieni lo script da Gemini
                 logger.info(f"Richiesta a Gemini per {company_name}...")
                 script_content = self.query_gemini(prompt)
-                
+
                 if not script_content:
                     logger.error(f"Nessuno script generato per {company_name}")
                     return company_name, None
-                
+
                 # Salva lo script
                 script_path = self.save_script(company_name, script_content)
             else:
                 logger.info(f"Script esistente trovato per {company_name}")
                 script_path = existing_script_path
-            
+
             if script_path:
                 # Esegui lo script
                 logger.info(f"Esecuzione script per {company_name}...")
                 df = self.execute_script(script_path, company_name)
                 return company_name, df
-            
+
         except Exception as e:
             logger.error(f"Errore durante l'elaborazione di {company_name}: {e}")
-        
+
         return company_name, None
 
-    def run(self, max_workers: int = 4)-> dict[str, pd.DataFrame]:
+    def run(self, max_workers: int = 4) -> dict[str, pd.DataFrame]:
         """
         Run the pipeline for all the companies
-        
+
         Args:
             max_workers (int): Maximum number of threds to be used
-            
-        Returns:
+
+        Returns
+        -------
             dict: Dictonary name of the company and dataframe.
         """
         # Carica le aziende
         company_names = self.load_companies()
         results = {}
-        
+
         # Processa le aziende in parallelo
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(self.process_company, name) for name in company_names]
-            
+
             for future in tqdm(futures, desc="Elaborazione aziende", total=len(company_names)):
                 company_name, df = future.result()
                 if df is not None:
                     results[company_name] = df
-        
+
         logger.info(f"Elaborazione completata. {len(results)}/{len(company_names)} aziende processate con successo.")
         return results
+
 
 if __name__ == "__main__":
     # Controlla se l'API key è stata impostata
     if not API_KEY:
-        print("ERRORE: API_KEY non impostata. Imposta la variabile d'ambiente GOOGLE_API_KEY o inseriscila direttamente nello script.")
+        print(
+            "ERRORE: API_KEY non impostata. Imposta la variabile d'ambiente GOOGLE_API_KEY o inseriscila direttamente nello script."
+        )
         sys.exit(1)
 
     # Verifica che il percorso del CSV sia fornito come argomento
     # if len(sys.argv) < 2:
     #     print("Utilizzo: python financial_scraper_generator.py percorso/al/file.csv [max_workers]")
     #     sys.exit(1)
-    csv_path = "dataset\discovery.csv" # TODO: to be load from a yaml file.
+    csv_path = r"dataset\discovery.csv"  # TODO: to be load from a yaml file.
     csv_path = sys.argv[1]
     max_workers = int(sys.argv[2]) if len(sys.argv) > 2 else 4
 
@@ -264,7 +267,7 @@ if __name__ == "__main__":
     print(f"- Data save in the directory: {generator.data_dir}")
     print(f"- Script generati nella direttori: {generator.output_dir}")
 
-# TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile 
+# TODO: Basterebbe un solo script che generiamo e possiamo mettere il nome della company come varibile
 # TODO: Funzioni di load e save dovrebbero essere a parte.
 # TODO: Add the financialscraper.log in a new folder
 # TODO: Add a function that popolates the df to send as as output.

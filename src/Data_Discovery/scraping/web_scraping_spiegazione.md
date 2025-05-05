@@ -45,7 +45,7 @@ run(): Avvia l'elaborazione per tutte le aziende
 
 
 6. Flusso dei dati
-[File CSV] → [Estrazione nomi aziende] → [Generazione prompt] → [API Gemini] → 
+[File CSV] → [Estrazione nomi aziende] → [Generazione prompt] → [API Gemini] →
 [Script Python] → [Esecuzione script] → [Web scraping] → [Dati finanziari in CSV]
 7. Requisiti tecnici
 
