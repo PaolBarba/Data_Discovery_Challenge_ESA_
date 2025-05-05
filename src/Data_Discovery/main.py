@@ -7,7 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
-import genai
+import google.generativeai as genai
 import pandas as pd
 from dotenv import load_dotenv
 from model.prompt_tuner import PromptTuner

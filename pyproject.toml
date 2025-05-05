@@ -5,12 +5,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "Data_Discovery"
-description =  "Rag development for PENGUINGPT."
+description =  "Data Discovery project."
 readme = "README.md"
 requires-python =">=3.10"
 dynamic = ["version"]
 dependencies = [
-  "google-generativeai"
+  "google-generativeai",
+  "pandas",
+  "python-dotenv",
+  "beautifulsoup4",
+  "retry"
 ]
 
 [tool.hatch.metadata]

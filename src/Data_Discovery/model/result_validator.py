@@ -5,7 +5,7 @@ import re
 import sys
 from datetime import datetime
 
-import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 logging.basicConfig(
