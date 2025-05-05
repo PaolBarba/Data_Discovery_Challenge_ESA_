@@ -556,48 +556,68 @@ class PromptGenerator:
 
     def __init__(self):
         """Inizialize the prompt generator."""
-        # Prompt base che verrà ottimizzato TODO: Ottimizzare e tradurre in inglese 
+        # Prompt base che verrà ottimizzato TODO: Ottimizzare
         self.base_prompt_template = """
-        SEI UN ESPERTO RICERCATORE FINANZIARIO specializzato nell individuare fonti ufficiali di dati finanziari per multinazionali.
+        YOU ARE A FINANCIAL RESEARCH EXPERT specializing in identifying official sources of financial data for multinational companies.
 
-        TASK: Trova la fonte più autorevole e specifica di dati finanziari per "{company_name}" (tipologia di fonte: {source_type}).
+            TASK: Find the most authoritative and specific financial data source for "{company_name}" (source type: {source_type}).
 
-        ISTRUZIONI DETTAGLIATE:
+            DETAILED INSTRUCTIONS:
 
-        1. TROVARE L'URL PIÙ SPECIFICO possibile che punti DIRETTAMENTE alla pagina contenente i dati finanziari più recenti.
-           - NON fornire URL generici della homepage dell'azienda
-           - PREFERIRE SEMPRE URL che puntano direttamente a bilanci/report specifici anziché pagine generali
-           - PRIORITÀ: pagina IR ufficiale > documento specifico > database finanziario > aggregatore
+            FIND THE MOST SPECIFIC URL possible that links DIRECTLY to the page containing the most recent financial data.
 
-        2. IDENTIFICARE L'ANNO DI RIFERIMENTO più recente disponibile:
-           - Deve essere l'anno fiscale/di riferimento dei dati, NON l'anno di pubblicazione
-           - Se disponibili più periodi, scegli il più recente (annuale o trimestrale)
-           - Specifica l'anno in formato numerico (es. "2023" o "2023-2024")
+            DO NOT provide generic URLs like the company homepage
 
-        PRIORITÀ DI FONTE in base al tipo "{source_type}":
-        - Per "Annual Report": IR website > SEC filings > PDF ufficiali > database finanziari
-        - Per "Consolidated": documenti consolidati ufficiali > IR website > database finanziari
-        - Per "Quarterly": quarterly report ufficiali > IR website > database finanziari
-        - Per qualsiasi altro tipo: IR website > documenti ufficiali > database finanziari attendibili
+            ALWAYS PREFER URLs pointing directly to specific financial statements/reports rather than general pages
 
-        SPECIFICHE TECNICHE PER L'URL:
-        - I documenti PDF/XBRL sono ALTAMENTE PREFERIBILI rispetto a pagine HTML generiche
-        - URL di IR (Investor Relations) sono PREFERIBILI rispetto a motori di ricerca o aggregatori
-        - Per aziende USA, i filing SEC (10-K, 10-Q) sono OTTIMALI
-        - Per aziende UE, i report ESEF/XBRL sono OTTIMALI
+            PRIORITY: official IR page > specific document > financial database > aggregator
 
-        ISTRUZIONI PER LA RISPOSTA:
-        - Restituisci un oggetto JSON con questa ESATTA struttura, SENZA TESTO ADDIZIONALE:
-        {{
-            "url": "URL_PRECISO_DELLA_FONTE",
-            "year": "ANNO_DI_RIFERIMENTO",
-            "confidence": "ALTA/MEDIA/BASSA",
-            "source_type": "TIPO_DI_FONTE"
-        }}
+            IDENTIFY THE MOST RECENT REFERENCE YEAR available:
 
-        {optimization_instructions}
+            This must be the fiscal/reporting year of the data, NOT the publication year
 
-        IMPORTANTE: Se trovi più fonti, seleziona SOLO la migliore in base ai criteri sopra. La precisione è fondamentale.
+            If multiple periods are available, choose the most recent one (annual or quarterly)
+
+            Specify the year in numeric format (e.g., "2023" or "2023-2024")
+
+            SOURCE PRIORITY depending on source type "{source_type}":
+
+            For "Annual Report": IR website > SEC filings > official PDFs > financial databases
+
+            For "Consolidated": official consolidated documents > IR website > financial databases
+
+            For "Quarterly": official quarterly reports > IR website > financial databases
+
+            For any other type: IR website > official documents > reliable financial databases
+
+            TECHNICAL REQUIREMENTS FOR THE URL:
+
+            PDF/XBRL documents are HIGHLY PREFERRED over generic HTML pages
+
+            IR (Investor Relations) URLs are PREFERRED over search engines or aggregators
+
+            For U.S. companies, SEC filings (10-K, 10-Q) are IDEAL
+
+            For EU companies, ESEF/XBRL reports are IDEAL
+
+            RESPONSE INSTRUCTIONS:
+
+            Return a JSON object in this EXACT format, with NO ADDITIONAL TEXT:
+
+            json
+            Copia
+            Modifica
+            {
+                "url": "EXACT_SOURCE_URL",
+                "year": "REFERENCE_YEAR",
+                "confidence": "HIGH/MEDIUM/LOW",
+                "source_type": "SOURCE_TYPE"
+            }
+            {optimization_instructions}
+
+            IMPORTANT: If you find multiple sources, select ONLY the best one based on the criteria above. Accuracy is critical.
+
+
         """
 
         # Istruzioni di ottimizzazione iniziali (vuote)
