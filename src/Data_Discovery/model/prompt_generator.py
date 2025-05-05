@@ -5,6 +5,8 @@ from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from google.generativeai import genai
+from prompts.base_prompt import base_prompt_template
+from utils import laod_config_yaml
 
 # Configurazione logging
 logging.basicConfig(
@@ -36,80 +38,20 @@ class PromptGenerator:
 
     def __init__(self):
         """Inizialize the prompt generator."""
-        # Prompt base che verrà ottimizzato TODO: Ottimizzare
-        self.base_prompt_template = """
-        YOU ARE A FINANCIAL RESEARCH EXPERT specializing in identifying official sources of financial data for multinational companies.
+        self.config = laod_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
+        # Base prompt template for generating the initial prompt
+        self.base_prompt_template = base_prompt_template
 
-            TASK: Find the most authoritative and specific financial data source for "{company_name}" (source type: {source_type}).
-
-            DETAILED INSTRUCTIONS:
-
-            FIND THE MOST SPECIFIC URL possible that links DIRECTLY to the page containing the most recent financial data.
-
-            DO NOT provide generic URLs like the company homepage
-
-            ALWAYS PREFER URLs pointing directly to specific financial statements/reports rather than general pages
-
-            PRIORITY: official IR page > specific document > financial database > aggregator
-
-            IDENTIFY THE MOST RECENT REFERENCE YEAR available:
-
-            This must be the fiscal/reporting year of the data, NOT the publication year
-
-            If multiple periods are available, choose the most recent one (annual or quarterly)
-
-            Specify the year in numeric format (e.g., "2023" or "2023-2024")
-
-            SOURCE PRIORITY depending on source type "{source_type}":
-
-            For "Annual Report": IR website > SEC filings > official PDFs > financial databases
-
-            For "Consolidated": official consolidated documents > IR website > financial databases
-
-            For "Quarterly": official quarterly reports > IR website > financial databases
-
-            For any other type: IR website > official documents > reliable financial databases
-
-            TECHNICAL REQUIREMENTS FOR THE URL:
-
-            PDF/XBRL documents are HIGHLY PREFERRED over generic HTML pages
-
-            IR (Investor Relations) URLs are PREFERRED over search engines or aggregators
-
-            For U.S. companies, SEC filings (10-K, 10-Q) are IDEAL
-
-            For EU companies, ESEF/XBRL reports are IDEAL
-
-            RESPONSE INSTRUCTIONS:
-
-            Return a JSON object in this EXACT format, with NO ADDITIONAL TEXT:
-
-            json
-            Copia
-            Modifica
-            {
-                "url": "EXACT_SOURCE_URL",
-                "year": "REFERENCE_YEAR",
-                "confidence": "HIGH/MEDIUM/LOW",
-                "source_type": "SOURCE_TYPE"
-            }
-            {optimization_instructions}
-
-            IMPORTANT: If you find multiple sources, select ONLY the best one based on the criteria above. Accuracy is critical.
-
-
-        """
-
-        # Istruzioni di ottimizzazione iniziali (vuote)
+        # Initial instructions for optimization
         self.optimization_instructions = ""
 
-        # Dizionario per memorizzare prompt specifici per azienda
+        # Dictionary to store company-specific prompts
         self.company_specific_prompts = {}
 
-        # Contatore di ottimizzazioni per azienda
+        # Counter for tracking the number of optimizations per company
         self.optimization_counter = {}
 
-    def generate_prompt(self, company_name, source_type):
+    def generate_prompt(self, company_name:str, source_type:str)-> str:
         """
         Generate the prompt for the given company name and source type.
 
@@ -169,13 +111,13 @@ class PromptGenerator:
 
         try:
             # Ask Google Gemini to optimize the prompt
-            model = genai.GenerativeModel("gemini-1.5-pro-latest")
+            model = genai.GenerativeModel(self.config["model_name"])
             response = model.generate_content(
                 optimization_request,
                 generation_config={
-                    "temperature": 0.2,
-                    "top_p": 0.95,
-                    "max_output_tokens": 2048,
+                    "temperature": self.config["temperature"],
+                    "top_p": self.config["top_p"],
+                    "max_output_tokens": self.config["max_output_tokens"],
                 },
             )
 
@@ -205,7 +147,7 @@ class PromptGenerator:
             return self._generate_scraping_based_prompt(company_name, scraping_results)
 
     def _create_optimization_request(self, company_name, feedback, current_prompt, scraping_results):
-        """create the request for optimization of the prompt."""
+        """Create the request for optimization of the prompt."""
         scraping_info = ""
         if scraping_results:
             url, year, desc, conf = scraping_results
