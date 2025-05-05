@@ -20,6 +20,19 @@ load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
+
+
+# TODO: The class has too many responsibilities, consider splitting it into smaller classes
+# TODO: Configuration must be externalized, consider using a config file or environment variables
+# TODO: All the code must be written in English, consider translating the comments and docstrings
+# TODO: Check if some code is repeated, if so, consider creating a helper function
+# TODO: Check if some code can be simplified, if so, consider using a simpler approach
+# TODO: Check if some code is useless, if so, consider removing it
+# TODO: Optimization instructions should be more specific and clear
+# TODO: Prompt must be written in English, consider translating it
+# TODO: The prompt must be loaded from a file or a database, consider using a config file or environment variables
+
+
 class ResultValidator:
     """Modulo per la validazione dei risultati tramite Gemini API"""
 

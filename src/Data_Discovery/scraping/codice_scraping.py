@@ -28,6 +28,14 @@ logger = logging.getLogger(__name__)
 # Configurare l'API di Google Gemini
 # L'API Key verrà letta dagli argomenti o dalle variabili d'ambiente nel blocco main
 
+# TODO: The class has too many responsibilities, consider splitting it into smaller classes
+# TODO: Configuration must be externalized, consider using a config file or environment variables
+# TODO: All the code must be written in English, consider translating the comments and docstrings
+# TODO: Check if some code is repeated, if so, consider creating a helper function
+# TODO: Check if some code can be simplified, if so, consider using a simpler approach
+# TODO: Check if some code is useless, if so, consider removing it
+# TODO: This class is the same as the cluade_challenge_code.py, consider merging them into one class or remove the unused one
+
 
 class WebScraperModule:
     """Modulo dedicato al web scraping per la ricerca di dati finanziari"""

@@ -32,6 +32,14 @@ API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
 
+# TODO: The class has too many responsibilities, consider splitting it into smaller classes
+# TODO: Configuration must be externalized, consider using a config file or environment variables
+# TODO: All the code must be written in English, consider translating the comments and docstrings
+# TODO: Check if some code is repeated, if so, consider creating a helper function
+# TODO: Check if some code can be simplified, if so, consider using a simpler approach
+# TODO: Check if some code is useless, if so, consider removing it
+
+
 class WebScraperModule:
     """Module for web scraping financial data sources."""
 
