@@ -152,38 +152,38 @@ class PromptGenerator:
         if scraping_results:
             url, year, desc, conf = scraping_results
             scraping_info = f"""
-            Il web scraping ha trovato le seguenti informazioni:
-            - URL: {url if url else 'Non trovato'}
-            - Anno: {year if year else 'Non trovato'}
-            - Tipo di fonte: {desc if desc else 'Non identificato'}
-            - Confidenza: {conf}
+            Web scraping found the following information:
+            - URL: {url if url else 'Not found'}
+            - Year: {year if year else 'Not found'}
+            - Source type: {desc if desc else 'Not identified'}
+            - Confidence: {conf}
             """
 
         return f"""
-        SEI UN ESPERTO DI PROMPT ENGINEERING specializzato nell'ottimizzazione di prompt per sistemi di intelligenza artificiale.
+        YOU ARE AN EXPERT IN PROMPT ENGINEERING specializing in optimizing prompts for artificial intelligence systems.
 
-        TASK: Ottimizzare il prompt esistente per migliorare la ricerca di dati finanziari per l'azienda "{company_name}".
+        TASK: Optimize the existing prompt to improve the search for financial data for the company "{company_name}".
 
-        FEEDBACK DALL'ULTIMO TENTATIVO:
-        - Problemi identificati: {feedback.get('problems', 'Nessun dato trovato o validato')}
-        - Suggerimenti: {feedback.get('suggestions', 'N/A')}
-        - Punti critici: {feedback.get('critical_points', 'N/A')}
+        FEEDBACK FROM THE LAST ATTEMPT:
+        - Identified issues: {feedback.get('problems', 'No data found or validated')}
+        - Suggestions: {feedback.get('suggestions', 'N/A')}
+        - Critical points: {feedback.get('critical_points', 'N/A')}
 
         {scraping_info}
 
-        PROMPT ATTUALE:
+        CURRENT PROMPT:
         ```
         {current_prompt}
         ```
 
-        ISTRUZIONI PER L'OTTIMIZZAZIONE:
-        1. Mantieni la struttura generale del prompt
-        2. Aggiungi istruzioni specifiche per risolvere i problemi identificati
-        3. Migliora la precisione delle richieste per ottenere URL diretti ai documenti
-        4. Assicurati che il prompt richieda esplicitamente l'anno fiscale corretto
-        5. Rafforza le priorità di ricerca in base al tipo di fonte richiesta
+        INSTRUCTIONS FOR OPTIMIZATION:
+        1. Maintain the general structure of the prompt
+        2. Add specific instructions to address the identified issues
+        3. Improve the precision of requests to obtain direct URLs to documents
+        4. Ensure the prompt explicitly requests the correct fiscal year
+        5. Strengthen search priorities based on the type of source requested
 
-        RESTITUISCI SOLO IL NUOVO PROMPT OTTIMIZZATO, SENZA SPIEGAZIONI O COMMENTI AGGIUNTIVI.
+        RETURN ONLY THE NEW OPTIMIZED PROMPT, WITHOUT ADDITIONAL EXPLANATIONS OR COMMENTS.
         """
 
     def _generate_scraping_based_prompt(self, company_name, scraping_results):
