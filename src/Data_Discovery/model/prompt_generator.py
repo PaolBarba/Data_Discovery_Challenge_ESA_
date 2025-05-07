@@ -1,3 +1,5 @@
+"""Prompt generator for financial data source finder."""
+
 import logging
 import os
 import sys
@@ -32,7 +34,6 @@ genai.configure(api_key=API_KEY)
 # TODO: The prompt must be loaded from a file or a database, consider using a config file or environment variables
 
 
-
 class PromptGenerator:
     """Mananage the prompt generation and optimization for the financial data source finder."""
 
@@ -51,7 +52,7 @@ class PromptGenerator:
         # Counter for tracking the number of optimizations per company
         self.optimization_counter = {}
 
-    def generate_prompt(self, company_name:str, source_type:str)-> str:
+    def generate_prompt(self, company_name: str, source_type: str) -> str:
         """
         Generate the prompt for the given company name and source type.
 
@@ -80,7 +81,7 @@ class PromptGenerator:
             company_name=company_name, source_type=source_type, optimization_instructions=optimization_text
         )
 
-    def optimize_prompt(self, company_name:str, feedback:dict, current_prompt:str, scraping_results:tuple)-> str:
+    def optimize_prompt(self, company_name: str, feedback: dict, current_prompt: str, scraping_results: tuple) -> str:
         """
         Optimize the prompt based on feedback and scraping results.
 
@@ -136,7 +137,7 @@ class PromptGenerator:
                 "Optimized prompt for %s (Attempt %s): %s",
                 company_name,
                 self.optimization_counter[company_name],
-                optimized_prompt
+                optimized_prompt,
             )
 
             return optimized_prompt
@@ -186,48 +187,47 @@ class PromptGenerator:
         RETURN ONLY THE NEW OPTIMIZED PROMPT, WITHOUT ADDITIONAL EXPLANATIONS OR COMMENTS.
         """
 
-    def _generate_scraping_based_prompt(self, company_name, scraping_results):
-        """Genera un prompt basato sui risultati dello scraping quando l'ottimizzazione fallisce"""
+    def _generate_scraping_based_prompt(self, company_name: str, scraping_results: str) -> str:
+        """Generate a prompt based on scraping results when optimization fails."""
         if not scraping_results or not any(scraping_results):
-            # Nessun risultato di scraping utilizzabile, usa un prompt generico migliorato
+            # No usable scraping results, use an improved generic prompt
             return self.base_prompt_template.format(
                 company_name=company_name,
                 source_type="Annual Report",
-                optimization_instructions="ATTENZIONE: Cerca con particolare attenzione, i tentativi precedenti non hanno prodotto risultati validi.",
+                optimization_instructions="Be careful to search thoroughly, previous attempts have not produced valid results.",
             )
 
         url, year, desc, conf = scraping_results
 
-        # Crea un prompt che incorpora i risultati dello scraping come suggerimenti
+        # Create a prompt that incorporates scraping results as suggestions
         domain_hint = ""
         if url:
             try:
                 domain = urlparse(url).netloc
-                domain_hint = f"\n- Considera il dominio {domain} che sembra promettente per questa ricerca"
+                domain_hint = f"\n- Consider the domain {domain} which seems promising for this search"
             except:
                 pass
 
         year_hint = ""
         if year:
-            year_hint = (
-                f"\n- L'anno fiscale {year} sembra essere disponibile, ma verifica se esistono report più recenti"
-            )
+            year_hint = f"\n- The fiscal year {year} appears to be available, but check if more recent reports exist"
 
         optimization_text = f"""
-        SUGGERIMENTI BASATI SU RICERCHE PRECEDENTI:
-        - Il tipo di fonte '{desc}' sembra appropriato per questa azienda{domain_hint}{year_hint}
-        - La precedente ricerca ha avuto un livello di confidenza '{conf}', cerca di migliorarlo
+        SUGGESTIONS BASED ON PREVIOUS SEARCHES:
+        - The source type '{desc}' seems appropriate for this company{domain_hint}{year_hint}
+        - The previous search had a confidence level of '{conf}', try to improve it
         """
 
         return self.base_prompt_template.format(
             company_name=company_name, source_type=desc or "Annual Report", optimization_instructions=optimization_text
         )
 
-    def _get_company_additional_info(self, company_name):
+    def _get_company_additional_info(self, company_name: str) -> str:
         """
-        Fornisce informazioni specifiche predefinite (hints) per alcune aziende.
-        Questi sono suggerimenti euristici basati su suffissi comuni e nomi noti.
-        L'accuratezza non è garantita e l'elenco non è esaustivo.
+        Provide predefined specific information (hints) for certain companies.
+
+        These are heuristic suggestions based on common suffixes and well-known names.
+        Accuracy is not guaranteed, and the list is not exhaustive.
         """
         # Dizionario di hints (chiave è una parte significativa del nome, case-insensitive)
         # NOTA: Mantenere le chiavi in lowercase per il matching
@@ -443,11 +443,11 @@ class PromptGenerator:
         # Cerca una corrispondenza (case-insensitive)
         normalized_company_name = company_name.lower()
         for key, value in known_info.items():
-            # Match se la chiave è contenuta nel nome azienda normalizzato
-            # Diamo priorità a match più lunghi/completi se ci sono più chiavi possibili?
-            # Per ora usiamo il primo match trovato.
+            # Match if the key is contained in the normalized company name
+            # Should we prioritize longer/more complete matches if multiple keys are possible?
+            # For now, we use the first match found.
             if key in normalized_company_name:
-                logger.debug(f"Trovato hint specifico per '{company_name}' basato sulla chiave '{key}'")
+                logger.debug(f"Found specific hint for '{company_name}' based on the key '{key}'")
                 return value  # Ritorna l'hint trovato
 
-        return None  # Nessuna info specifica trovata
+        return None  # No info found for this company

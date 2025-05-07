@@ -1,7 +1,9 @@
+"""Prompt improving module for financial data scraping."""
+
 import json
 
 
-def improve_prompt(self, company_name,current_prompt ,source_type, scraping_result, validation_result):
+def improving_prompt(company_name, current_prompt, source_type, scraping_result, validation_result):
     """
     Generate an improvement prompt for optimizing the current prompt used in web scraping.
 

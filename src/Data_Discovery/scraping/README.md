@@ -18,7 +18,7 @@ The code is structured into the following main classes:
 ### `WebScraperModule`
 
 - **Purpose:** Handle all web scraping operations.
-- **Key Functions:** 
+- **Key Functions:**
   - Find the company's official website.
   - Locate the "Investor Relations" (IR) page.
   - Extract links to financial reports (PDFs, etc.) from web pages.
@@ -28,21 +28,21 @@ The code is structured into the following main classes:
 ### `PromptGenerator`
 
 - **Purpose:** Dynamically create and optimize prompts sent to the AI for source searching.
-- **Key Functions:** 
+- **Key Functions:**
   - Generates the initial prompt based on a template and company-specific information (if available).
   - Iteratively modifies the prompt (`optimize_prompt`) based on feedback received from the `Validator`, asking another AI instance to suggest improvements.
 
 ### `Validator`
 
 - **Purpose:** Assess the accuracy and specificity of the results (URL and year) returned by the search AI.
-- **Key Functions:** 
+- **Key Functions:**
   - Uses a specific “judge” prompt to ask Gemini whether the URL is correct, relevant, specific to the request, and whether the year is accurate and the most recent.
   - Provides structured feedback (`validate_result`) used for prompt optimization.
 
 ### `FinancialSourceFinder`
 
 - **Purpose:** Orchestrate the entire workflow.
-- **Key Functions:** 
+- **Key Functions:**
   - Initializes the other modules.
   - Loads the list of companies from a CSV file.
   - Manages parallel execution (`run`, `ThreadPoolExecutor`) for each company (`process_company`).

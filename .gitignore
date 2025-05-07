@@ -15,7 +15,7 @@
 
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
-#.exe .bat  config 
+#.exe .bat  config
 .exe
 .bat
 data_discovery/*

@@ -22,7 +22,8 @@ base_prompt_improving = """
         - Verify that the URL is accessible and does not require login
         - Indicate the most recent available fiscal year
         """
-base_prompt_template ="""
+
+base_prompt_template = """
         YOU ARE A FINANCIAL RESEARCH EXPERT specializing in identifying official sources of financial data for multinational companies.
 
             TASK: Find the most authoritative and specific financial data source for "{company_name}" (source type: {source_type}).

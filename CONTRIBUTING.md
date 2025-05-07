@@ -13,10 +13,10 @@
 3. Create a virtual environment.
 
    ```bash
-    python  -m venv data_discovery   
+    python  -m venv data_discovery
     ```
 
-    
+
 
 4. Activate the virtual environment.
 

@@ -1,4 +1,5 @@
-import json
+"""Prompt Tuner Module."""
+
 import logging
 import os
 import sys
@@ -6,8 +7,8 @@ from datetime import datetime
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from prompts.base_prompt import base_prompt
-from prompts.prompt_improving import improve_prompt
+from prompts.base_prompt import base_prompt_improving
+from prompts.prompt_improving import improving_prompt
 from utils import laod_config_yaml
 
 logging.basicConfig(
@@ -25,25 +26,23 @@ genai.configure(api_key=API_KEY)
 
 # TODO: The saving must be done in a specific folder, consider creating a folder for the results
 
+
 class PromptTuner:
     """Module for automatic prompt optimization based on feedback."""
 
-    def __init__(self, initial_prompt_template:str | None =None):
+    def __init__(self, initial_prompt_template: str | None = None):
         """Initialize the PromptTuner with a default prompt template.
 
         Args:
             initial_prompt_template (str): Template for the initial prompt.
         """
-        self.current_prompt = (
-            initial_prompt_template
-            or base_prompt
-        )
+        self.current_prompt = initial_prompt_template or base_prompt_improving
         self.config = laod_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
 
         self.tuning_history = []
         self.model = genai.GenerativeModel(self.config["model_name"])
 
-    def generate_prompt(self, company_name:str, source_type:str) -> str:
+    def generate_prompt(self, company_name: str, source_type: str) -> str:
         """
         Generate the full prompt for the given company and source type.
 
@@ -71,7 +70,7 @@ class PromptTuner:
             str: New improved prompt
         """
         # Improves the current prompt using feedback from Gemini
-        improvement_prompt = improve_prompt(
+        improvement_prompt = improving_prompt(
             company_name=company_name,
             current_prompt=self.current_prompt,
             source_type=source_type,

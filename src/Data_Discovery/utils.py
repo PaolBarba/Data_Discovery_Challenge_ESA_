@@ -1,4 +1,7 @@
+"""Utility functions for data discovery and configuration management."""
+
 from pathlib import Path
+
 import yaml
 
 

@@ -1,4 +1,5 @@
 model_name: "gemini-1.5-pro-latest"
+dotenv_path: src/Data_Discovery/config/model_config/.env
 temperature: 0.2
 top_p: 0.95
 max_output_tokens: 2048

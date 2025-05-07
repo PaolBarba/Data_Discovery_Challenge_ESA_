@@ -3,7 +3,6 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -19,7 +18,6 @@ logger = logging.getLogger(__name__)
 load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
 API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
-
 
 
 # TODO: The class has too many responsibilities, consider splitting it into smaller classes
@@ -135,4 +133,3 @@ class ResultValidator:
         except Exception as e:
             logger.warning(f"Impossibile estrarre JSON dalla risposta: {e}")
             return None
-
