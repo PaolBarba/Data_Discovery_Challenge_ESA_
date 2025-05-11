@@ -19,9 +19,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-financial_sources_finder = FinancialSourcesFinder()
-
-
 def main():
     """Run the financial sources finder."""
     import argparse
@@ -44,17 +41,7 @@ def main():
         logger.error("Gemini API key not provided. Set GOOGLE_API_KEY or use --api-key")
         sys.exit(1)
 
-    # Load the input CSV
-    try:
-        df = pd.read_csv(args.input, sep=";")
-        if "NAME" not in df.columns:
-            # Try using the first column as the company name
-            company_column = df.columns[0]
-            df = df.rename(columns={company_column: "NAME"})
-            logger.warning(f"Column 'NAME' not found, using '{company_column}' instead")
-    except Exception as e:
-        logger.error(f"Error loading the CSV: {e}")
-        sys.exit(1)
+    df = pd.read_csv(args.input, sep=";")
 
     # Initialize the finder
     finder = FinancialSourcesFinder(
@@ -63,18 +50,18 @@ def main():
 
     # Prepare batches of companies
     companies = df["NAME"].tolist()
+
     batches = [companies[i : i + args.batch_size] for i in range(0, len(companies), args.batch_size)]
 
-    # Process batches in parallel
     all_results = []
+
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []
         for batch in batches:
             future = executor.submit(
-                financial_sources_finder.process_companies_batch(
+                finder.process_companies_batch(
                     companies_batch=batch,
                     source_type=args.source_type,
-                    finder=finder,
                 )
             )
             futures.append(future)

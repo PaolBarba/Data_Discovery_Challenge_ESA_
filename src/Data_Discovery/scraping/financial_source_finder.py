@@ -4,9 +4,10 @@ import logging
 import sys
 
 import google.generativeai as genai
-from Data_Discovery.model.prompt_tuner import PromptTuner
 from model.result_validator import ResultValidator
-from scraping.claude_challenge_code import WebScraperModule
+from scraping.scraping_challenge import WebScraperModule
+
+from Data_Discovery.model.prompt_tuner import PromptTuner
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,7 +15,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("financial_sources_finder.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-
 
 
 class FinancialSourcesFinder:
@@ -58,55 +58,58 @@ class FinancialSourcesFinder:
 
         # Prepare the scraping result
         scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
+        logging.info(f"Result: {scraping_result}")
 
         # Validate the result
-        validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
+        # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
 
-        # Automatic tuning loop
-        iteration = 0
-        while (
-            not validation_result.get("is_valid", False)
-            or validation_result.get("validation_score", 0) < self.validation_threshold
-        ) and iteration < self.max_tuning_iterations:
-            iteration += 1
-            logger.info(f"Tuning iteration {iteration} for {company_name}")
+        # Save the results in a specif folder
 
-            # Improve the prompt
-            self.prompt_tuner.improve_prompt(company_name, source_type, scraping_result, validation_result)
+        # # Automatic tuning loop
+        # iteration = 0
+        # while (
+        #     not validation_result.get("is_valid", False)
+        #     or validation_result.get("validation_score", 0) < self.validation_threshold
+        # ) and iteration < self.max_tuning_iterations:
+        #     iteration += 1
+        #     logger.info(f"Tuning iteration {iteration} for {company_name}")
 
-            # Retry scraping
-            url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
+        #     # Improve the prompt
+        #     self.prompt_tuner.improve_prompt(company_name, source_type, scraping_result, validation_result)
 
-            # Update the result
-            scraping_result = {
-            "url": url,
-            "year": year,
-            "source_description": source_description,
-            "confidence": confidence,
-            }
+        #     # Retry scraping
+        #     url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
 
-            # Revalidate
-            validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
+        #     # Update the result
+        #     scraping_result = {
+        #     "url": url,
+        #     "year": year,
+        #     "source_description": source_description,
+        #     "confidence": confidence,
+        #     }
 
-        # Prepare the final result
-        final_result = {
-            "company_name": company_name,
-            "source_type": source_type,
-            "url": url,
-            "year": year,
-            "source_description": source_description,
-            "confidence": confidence,
-            "validation_score": validation_result.get("validation_score", 0),
-            "is_valid": validation_result.get("is_valid", False),
-            "tuning_iterations": iteration,
-            "feedback": validation_result.get("feedback", ""),
-        }
+        #     # Revalidate
+        #     validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
 
-        logger.info(f"Search completed for {company_name}: {'VALID' if final_result['is_valid'] else 'NOT VALID'}")
-        return final_result
+        # # Prepare the final result
+        # final_result = {
+        #     "company_name": company_name,
+        #     "source_type": source_type,
+        #     "url": url,
+        #     "year": year,
+        #     "source_description": source_description,
+        #     "confidence": confidence,
+        #     "validation_score": validation_result.get("validation_score", 0),
+        #     "is_valid": validation_result.get("is_valid", False),
+        #     "tuning_iterations": iteration,
+        #     "feedback": validation_result.get("feedback", ""),
+        # }
 
+        # logger.info(f"Search completed for {company_name}: {'VALID' if final_result['is_valid'] else 'NOT VALID'}")
+        # return final_result
+        return scraping_result
 
-    def process_companies_batch(self, companies_batch, source_type, finder):
+    def process_companies_batch(self, companies_batch, source_type):
         """
         Process a batch of companies in parallel.
 
@@ -120,13 +123,7 @@ class FinancialSourcesFinder:
         list: Results for the batch.
         """
         results = []
-        try:
-            for company in companies_batch:
-                result = finder.find_financial_source(company, source_type)
-                results.append(result)
-        except Exception:
-            logger.exception("Error processing a company in the batch", extra={"batch": companies_batch})
-            results.append(
-                {"company_name": company, "source_type": source_type, "url": None, "year": None, "error": "Processing error"}
-            )
+        for company in companies_batch:
+            result = self.find_financial_source(company, source_type)
+            results.append(result)
         return results
