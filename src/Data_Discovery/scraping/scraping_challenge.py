@@ -52,7 +52,7 @@ class WebScraperModule:
         self.config = laod_config_yaml(config_path)
         self.timeout = self.config["timeout"]
         self.max_retries = self.config["max_retries"]
-        self.prompt = self.config["prompt"]
+        # self.prompt = self.config["prompt"]
 
         if user_agent is None:
             # Rotating user agents to avoid being blocked
@@ -73,7 +73,7 @@ class WebScraperModule:
         # Add the delay to avoid being blocked by the server
         self.request_delay = self.config["request_delay"]
 
-    @retry(tries=5, delay=3, backoff=2, jitter=1)
+    @retry(tries=1, delay=3, backoff=2, jitter=1)
     
     def get_page(self, url:str)-> str | None:
         
@@ -191,6 +191,7 @@ class WebScraperModule:
             for link in all_links:
                 url = link.get("href")
                 if url and self._is_potential_corporate_domain(url, company_name):
+                  
                     return self._normalize_url(url)
 
             return None

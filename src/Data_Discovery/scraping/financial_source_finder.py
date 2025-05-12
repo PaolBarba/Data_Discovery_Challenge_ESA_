@@ -1,7 +1,10 @@
 """Main module for the Financial Sources Finder project."""
 
+import json
 import logging
+import os
 import sys
+from pathlib import Path
 
 import google.generativeai as genai
 from model.result_validator import ResultValidator
@@ -49,12 +52,31 @@ class FinancialSourcesFinder:
 
         Returns
         -------
-            dict: Final result with URL, year, and metadata.
+            dict: Final result with URL, yaear, and metadata.
         """
         logger.info(f"Starting search for {company_name} (type: {source_type})")
 
         # Perform initial scraping
         url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
+
+        report_dir = os.path.join("reports", company_name)
+        report_path = os.path.join(report_dir, "report_data.json")
+        # Ensure the directory exists
+        os.makedirs(report_dir, exist_ok=True)
+
+
+
+        # Save data as JSON
+        with Path.open(report_path, 'w') as f:
+                    # Prepare the data to save
+            data = {
+                "rl": url,
+                "year": year,
+                "source_description": source_description,
+                "confidence": confidence
+            }
+            json.dump(data, f, indent=4)
+
 
         # Prepare the scraping result
         scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
