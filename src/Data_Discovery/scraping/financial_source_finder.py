@@ -64,19 +64,11 @@ class FinancialSourcesFinder:
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)
 
-
-
         # Save data as JSON
-        with Path.open(report_path, 'w') as f:
-                    # Prepare the data to save
-            data = {
-                "rl": url,
-                "year": year,
-                "source_description": source_description,
-                "confidence": confidence
-            }
+        with Path.open(report_path, "w") as f:
+            # Prepare the data to save
+            data = {"rl": url, "year": year, "source_description": source_description, "confidence": confidence}
             json.dump(data, f, indent=4)
-
 
         # Prepare the scraping result
         scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}

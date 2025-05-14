@@ -9,6 +9,7 @@ from datetime import datetime
 
 import pandas as pd
 from scraping.financial_source_finder import FinancialSourcesFinder
+
 from tqdm import tqdm
 
 logging.basicConfig(

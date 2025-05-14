@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 
-def laod_config_yaml(config_path: str) -> dict:
+def load_config_yaml(config_path: str) -> dict:
     """
     Load a YAML configuration file.
 

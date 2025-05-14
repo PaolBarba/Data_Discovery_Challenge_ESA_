@@ -28,6 +28,8 @@ data_discovery/*
 # Icon must end with two \r
 Icon
 
+# Reports files
+reports/*
 
 # Thumbnails
 ._*

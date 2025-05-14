@@ -1,6 +1,5 @@
 """Claude Challenge Code for scraping financial data sources."""
 
-
 import logging
 import re
 import secrets
@@ -22,8 +21,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-
-
 # TODO: The class has too many responsibilities, consider splitting it into smaller classes
 # TODO: Configuration must be externalized, consider using a config file or environment variables
 # TODO: Check if some code is repeated, if so, consider creating a helper function
@@ -31,12 +28,11 @@ logger = logging.getLogger(__name__)
 # TODO: Check if some code is useless, if so, consider removing it
 
 
-
 class WebScraperModule:
     """Module for web scraping financial data sources."""
 
     def __init__(
-        self, 
+        self,
         config_path: str = "src/Data_Discovery/config/scraping_config/config.yaml",
         user_agent=None,
     ):
@@ -74,9 +70,7 @@ class WebScraperModule:
         self.request_delay = self.config["request_delay"]
 
     @retry(tries=1, delay=3, backoff=2, jitter=1)
-    
-    def get_page(self, url:str)-> str | None:
-        
+    def get_page(self, url: str) -> str | None:
         """Load the HTML page from the given URL.
 
         Args:
@@ -99,7 +93,7 @@ class WebScraperModule:
             logger.warning(f"Errore durante il download della pagina {url}: {e}")
             raise  # The retry decorator will handle the retry logic
 
-    def find_company_website_with_ai(self, company_name:str)-> str | None:
+    def find_company_website_with_ai(self, company_name: str) -> str | None:
         """
         Look for the official website of the company.
 
@@ -110,17 +104,15 @@ class WebScraperModule:
         -------
             str: URL of the company's website or None if not found
         """
-        
         self.web_scraping_code = self.call(self.prompt, company_name)
-        
-        # Load the code and run it
-        pass
-    
-        # TODO if it is not correct retry giving the llm the error got
-        
-        return 
 
-    def find_company_website(self, company_name:str)-> str | None:
+        # Load the code and run it
+
+        # TODO if it is not correct retry giving the llm the error got
+
+        return
+
+    def find_company_website(self, company_name: str) -> str | None:
         """
         Look for the official website of the company.
 
@@ -131,7 +123,6 @@ class WebScraperModule:
         -------
             str: URL of the company's website or None if not found
         """
-        
         try:
             # Alternative approch and direct approch
 
@@ -191,7 +182,6 @@ class WebScraperModule:
             for link in all_links:
                 url = link.get("href")
                 if url and self._is_potential_corporate_domain(url, company_name):
-                  
                     return self._normalize_url(url)
 
             return None
@@ -199,7 +189,7 @@ class WebScraperModule:
             logger.error(f"Error while searching for the website of {company_name}: {e}")
             return None
 
-    def _is_corporate_domain(self, url:str, company_name:str)-> bool:
+    def _is_corporate_domain(self, url: str, company_name: str) -> bool:
         """Check if a URL is likely the corporate domain."""
         domain = urlparse(url).netloc
 
@@ -210,7 +200,7 @@ class WebScraperModule:
         # Check if the domain contains significant tokens from the company name
         return any(token in domain for token in company_tokens if len(token) > 2)
 
-    def _is_potential_corporate_domain(self, url:str, company_name:str)-> bool:
+    def _is_potential_corporate_domain(self, url: str, company_name: str) -> bool:
         """Verifica meno stringente per identificare possibili domini aziendali."""
         # Rimuovi parametri e frammenti
         url = url.split("?")[0].split("#")[0]
@@ -245,7 +235,7 @@ class WebScraperModule:
         significant_tokens = [t for t in company_tokens if len(t) > 2 and t not in ["inc", "ltd", "the", "and", "corp"]]
         return any(token in domain for token in significant_tokens)
 
-    def _tokenize_company_name(self, name:str)-> list:
+    def _tokenize_company_name(self, name: str) -> list:
         """Split the company name into significant tokens."""
         # Rimuovi elementi comuni come Inc, Corp, Ltd
         cleaned = re.sub(
@@ -270,7 +260,7 @@ class WebScraperModule:
 
         return url
 
-    def find_investor_relations_page(self, company_url:str)-> str | None:
+    def find_investor_relations_page(self, company_url: str) -> str | None:
         """Find the investor relations page of the company.
 
         Args:
@@ -331,7 +321,7 @@ class WebScraperModule:
             logger.error(f"Errore durante la ricerca della pagina IR su {company_url}: {e}")
             return None
 
-    def find_financial_reports(self, ir_page_url: str, source_type: str ="Annual Report")-> list:
+    def find_financial_reports(self, ir_page_url: str, source_type: str = "Annual Report") -> list:
         """Look for financial reports on the investor relations page.
 
         Args:
@@ -401,7 +391,7 @@ class WebScraperModule:
             logger.error(f"Errore durante la ricerca di report finanziari su {ir_page_url}: {e}")
             return []
 
-    def _extract_year_from_text(self, text:str)-> str | None:
+    def _extract_year_from_text(self, text: str) -> str | None:
         """Extract the year from the text."""
         # Regex pattern to match various year formats
         year_patterns = [
@@ -419,7 +409,7 @@ class WebScraperModule:
 
         return None
 
-    def _extract_year_from_url(self, url:str)-> str | None:
+    def _extract_year_from_url(self, url: str) -> str | None:
         """Extract the year from the URL."""
         # Simile all'estrazione dal testo, ma specifico per URL
         year_patterns = [
@@ -437,7 +427,7 @@ class WebScraperModule:
 
         return None
 
-    def find_sec_filings(self, company_name:str, form_type="10-K")-> list:
+    def find_sec_filings(self, company_name: str, form_type="10-K") -> list:
         """Look for SEC filings for the company.
 
         Args:
@@ -492,7 +482,7 @@ class WebScraperModule:
             logger.error(f"Errore durante la ricerca di filing SEC per {company_name}: {e}")
             return []
 
-    def scrape_financial_sources(self, company_name:str, source_type: str)-> tuple | None:
+    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
         """
         Scrape the financial sources for the given company name and source type.
 
@@ -572,8 +562,7 @@ class WebScraperModule:
 
         return best_url, best_year, source_description, confidence
 
-    def _could_be_us_company(self, company_name:str)-> bool:
+    def _could_be_us_company(self, company_name: str) -> bool:
         """Check if the company name suggests it could be a US company."""
         us_indicators = ["Inc", "Inc.", "Corp", "Corp.", "LLC", "LLP", "Co.", "USA", "America", "US "]
         return any(indicator in company_name for indicator in us_indicators)
-
