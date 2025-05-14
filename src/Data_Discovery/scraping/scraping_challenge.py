@@ -9,9 +9,10 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
-from model.prompt_generator import PromptGenerator
 from retry import retry
 from utils import load_config_yaml
+
+from Data_Discovery.model.prompt_generator import PromptGenerator
 
 # Logging configuration
 logging.basicConfig(
@@ -483,8 +484,8 @@ class WebScraperModule:
         logger.info("Start %s (Type: %s)", company_name, source_type)
 
         # Find the web site of the company
-        company_url = self.find_company_website(company_name)
-        company_url_ai = self.find_company_website_with_ai(company_name)
+#        company_url = self.find_company_website(company_name)
+        company_url = self.find_company_website_with_ai(company_name)
 
         # If it does not find it, try a a sec reserch (could be a US company)
         if not company_url:

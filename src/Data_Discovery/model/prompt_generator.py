@@ -3,12 +3,15 @@
 import logging
 import os
 import sys
+import time
 from urllib.parse import urlparse
 
+import google.generativeai as genai
 from dotenv import load_dotenv
-from google.generativeai import genai
-from prompts.base_prompt import base_prompt_template
-from utils import laod_config_yaml
+from google.api_core.exceptions import ResourceExhausted
+from utils import load_config_yaml
+
+from Data_Discovery.prompts.base_prompt import base_prompt_template
 
 # Configurazione logging
 logging.basicConfig(
@@ -39,7 +42,7 @@ class PromptGenerator:
 
     def __init__(self):
         """Inizialize the prompt generator."""
-        self.config = laod_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
+        self.config = load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
         # Base prompt template for generating the initial prompt
         self.base_prompt_template = base_prompt_template
 
@@ -447,4 +450,29 @@ class PromptGenerator:
         return None  # No info found for this company
 
     def call(self, prompt: str) -> str:
-        return self.model.generate_content(prompt)
+        retries = 0
+        max_retries = 5
+
+        while retries < max_retries:
+            response = None
+            try:
+                response = self.model.generate_content(prompt)
+            except ResourceExhausted as e:
+                logger.warning("Quota exceeded: %s", e.message)
+                # Try to extract retry delay from exception, or default to 60 seconds
+                delay = getattr(e, "retry_delay", 60)
+                delay = delay.seconds if hasattr(delay, "seconds") else 60
+                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
+                time.sleep(delay)
+            except Exception as e:
+                logger.error("Unhandled exception during model call: %s", e)
+                break  # Or re-raise depending on your error handling policy
+
+            if response:
+                logger.info("Response received successfully.")
+                return response
+
+            retries += 1
+
+        logger.error("Failed to get a response after %d retries.", max_retries)
+        return None
