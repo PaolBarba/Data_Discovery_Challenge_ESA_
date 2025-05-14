@@ -9,7 +9,7 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 from prompts.base_prompt import base_prompt_improving
 from prompts.prompt_improving import improving_prompt
-from utils import laod_config_yaml
+from utils import load_config_yaml
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +37,7 @@ class PromptTuner:
             initial_prompt_template (str): Template for the initial prompt.
         """
         self.current_prompt = initial_prompt_template or base_prompt_improving
-        self.config = laod_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
+        self.config = load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
 
         self.tuning_history = []
         self.model = genai.GenerativeModel(self.config["model_name"])

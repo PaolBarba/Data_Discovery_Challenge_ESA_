@@ -10,7 +10,7 @@ from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from retry import retry
-from utils import laod_config_yaml
+from utils import load_config_yaml
 
 # Logging configuration
 logging.basicConfig(
@@ -43,7 +43,7 @@ class WebScraperModule:
             max_retries (int): Numero massimo di tentativi per le richieste
         """
         self.session = requests.Session()
-        self.config = laod_config_yaml(config_path)
+        self.config = load_config_yaml(config_path)
         self.timeout = self.config["timeout"]
         self.max_retries = self.config["max_retries"]
         # self.prompt = self.config["prompt"]
@@ -110,80 +110,71 @@ class WebScraperModule:
 
     def find_company_website(self, company_name: str) -> str | None:
         """
-        Look for the official website of the company.
-
+        Attempt to find the official website of a company.
+        
         Args:
-            company_name (str): Name of the company
-
-        Returns
-        -------
-            str: URL of the company's website or None if not found
+            company_name (str): The name of the company.
+        
+        Returns:
+            str: The URL of the official company website, or None if not found.
         """
         try:
-            # Alternative approch and direct approch
-
-            # Start trying to build a direct URL from the company name
             company_tokens = self._tokenize_company_name(company_name.lower())
+            common_words = {"inc", "ltd", "the", "and", "corp", "co", "company", "group"}
+            significant_tokens = [t for t in company_tokens if len(t) > 2 and t not in common_words]
 
-            # Remove common tokens that are not significant for the domain
-            significant_tokens = [
-                t for t in company_tokens if len(t) > 2 and t not in ["inc", "ltd", "the", "and", "corp"]
-            ]
             if significant_tokens:
-                # Try to build a domain from the first two significant tokens
-                company_domain = significant_tokens[0].lower()
-                if len(significant_tokens) > 1:
-                    company_domain += significant_tokens[1].lower()
+                base_tokens = significant_tokens[:3]
+                domains_to_try = []
 
-                # Try to build potential domains
-                potential_domains = [
-                    f"https://www.{company_domain}.com/",
-                    f"https://{company_domain}.com/",
-                    f"https://www.{company_domain}.org/",
-                    f"https://www.{significant_tokens[0]}.com/",
-                ]
+                # Generate permutations and try multiple TLDs
+                tlds = ["com", "org", "net", "co", "io"]
+                for tld in tlds:
+                    for i in range(len(base_tokens)):
+                        domain_name = ''.join(base_tokens[:i + 1])
+                        domains_to_try.extend([
+                            f"https://www.{domain_name}.{tld}/",
+                            f"https://{domain_name}.{tld}/"
+                        ])
 
-                for domain in potential_domains:
+                for domain in domains_to_try:
                     try:
-                        logger.info(f"Attempting direct access to {domain}")
+                        logger.info(f"Trying domain: {domain}")
                         html = self.get_page(domain)
-                        if html:
-                            return domain
+                        if html and self._is_corporate_domain(domain, company_name):
+                            return self._normalize_url(domain)
                     except Exception:
                         continue
 
-            #  DuckDuckGo search for the official website
-            search_url = f"https://duckduckgo.com/html/?q={company_name}+official+website"
+            # Search with DuckDuckGo
+            search_url = f"https://html.duckduckgo.com/html?q={company_name}+official+website"
             html = self.get_page(search_url)
 
             if not html:
-                # Fallback: prova con un approccio SEC per aziende USA
                 if self._could_be_us_company(company_name):
-                    logger.info(f"Tentativo di ricerca SEC diretta per {company_name}")
-                    return None  # Questo farà sì che il codice passi direttamente alla ricerca SEC
+                    logger.info(f"SEC fallback for: {company_name}")
+                    return None
                 return None
 
             soup = BeautifulSoup(html, "html.parser")
-            results = soup.find_all("a", {"class": "result__url"})
+            links = soup.find_all("a", href=True)
 
-            # Filter the results to obtain plausible corporate domains
-            for result in results:
-                url = result.get("href")
-                if url and self._is_corporate_domain(url, company_name):
-                    # verify if the URL is valid and accessible and the official website
-                    return self._normalize_url(url)
-
-            # Alternative method: search the results page for any URL containing parts of the company name
-            all_links = soup.find_all("a")
-            for link in all_links:
-                url = link.get("href")
-                if url and self._is_potential_corporate_domain(url, company_name):
-                    return self._normalize_url(url)
+            for link in links:
+                url = link["href"]
+                if self._is_potential_corporate_domain(url, company_name):
+                    try:
+                        normalized_url = self._normalize_url(url)
+                        if normalized_url and self._is_corporate_domain(normalized_url, company_name):
+                            return normalized_url
+                    except Exception:
+                        continue
 
             return None
+
         except Exception as e:
-            logger.error(f"Error while searching for the website of {company_name}: {e}")
+            logger.error(f"Error finding website for {company_name}: {e}")
             return None
+
 
     def _is_corporate_domain(self, url: str, company_name: str) -> bool:
         """Check if a URL is likely the corporate domain."""

@@ -39,7 +39,7 @@ class ResultValidator:
     def __init__(self):
         """Inizializza il validatore dei risultati"""
         # Utilizziamo Gemini invece di Mistral
-        self.config = self.load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
+        self.config = load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
         self.model_name = self.config.get("model_name")
 
     def validate_result(self, company_name, source_type, scraping_result):

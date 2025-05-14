@@ -54,12 +54,12 @@ class FinancialSourcesFinder:
         -------
             dict: Final result with URL, yaear, and metadata.
         """
-        logger.info(f"Starting search for {company_name} (type: {source_type})")
+        logger.info("Starting search for %s (type: %s)", company_name, source_type)
 
         # Perform initial scraping
         url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
 
-        report_dir = os.path.join("reports", company_name)
+        report_dir = os.path.join("reports", company_name) #
         report_path = os.path.join(report_dir, "report_data.json")
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)
@@ -73,8 +73,9 @@ class FinancialSourcesFinder:
 
         # Validate the result
         validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
-        
-        
+
+
+
 
 
         # # Automatic tuning loop

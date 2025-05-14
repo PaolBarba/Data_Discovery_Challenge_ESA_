@@ -6,10 +6,10 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
 from scraping.financial_source_finder import FinancialSourcesFinder
-
 from tqdm import tqdm
 
 logging.basicConfig(
@@ -77,19 +77,19 @@ def main():
 
     # Save the results
     results_df.to_csv(args.output, index=False)
-    logger.info(f"Results saved to {args.output}")
+    logger.info("Results saved to %s", args.output)
 
     # Print statistics
-    valid_results = results_df[results_df["is_valid"] == True]
-    logger.info(f"Total companies processed: {len(results_df)}")
-    logger.info(f"Valid results: {len(valid_results)} ({len(valid_results)/len(results_df)*100:.1f}%)")
+    valid_results = results_df[results_df["is_valid"]]
+    logger.info("Total companies processed: %d", len(results_df))
+    logger.info("Valid results: %d (%.1f%%)", len(valid_results), (len(valid_results) / len(results_df) * 100))
 
     # Save a detailed JSON report
     report_path = args.output.replace(".csv", "_report.json")
-    with open(report_path, "w") as f:
+    with Path.open(report_path, "w") as f:
         json.dump(
             {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now().isoformat(),  # noqa: DTZ005
                 "total_companies": len(results_df),
                 "valid_results": len(valid_results),
                 "validation_rate": len(valid_results) / len(results_df),
@@ -99,7 +99,7 @@ def main():
             f,
             indent=2,
         )
-    logger.info(f"Detailed report saved to {report_path}")
+    logger.info("Detailed report saved to %s", report_path)
 
 
 if __name__ == "__main__":
