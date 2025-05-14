@@ -9,6 +9,7 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
+from model.prompt_generator import PromptGenerator
 from retry import retry
 from utils import load_config_yaml
 
@@ -31,23 +32,20 @@ logger = logging.getLogger(__name__)
 class WebScraperModule:
     """Module for web scraping financial data sources."""
 
-    def __init__(
-        self,
-        config_path: str = "src/Data_Discovery/config/scraping_config/config.yaml"):
+    def __init__(self):
         """
-        Inizializza il modulo di scraping.
+        Initialize the web scraper with necessary configurations.
 
         Args:
             user_agent (str): User agent da utilizzare per le richieste HTTP
             timeout (int): Timeout in secondi per le richieste
-            max_retries (int): Numero massimo di tentativi per le richieste
+            max_retries (int): Numero massimo di tentativi per le richieste.
         """
         self.session = requests.Session()
-        self.config = load_config_yaml(config_path)
+        self.config = load_config_yaml("src/Data_Discovery/config/scraping_config/config.yaml")
         self.timeout = self.config["timeout"]
         self.max_retries = self.config["max_retries"]
-        # self.prompt = self.config["prompt"]
-
+        self.prompt_generator = PromptGenerator()
         user_agents = self.config["user_agents"]
         # Random choice of agents, random generator are not suitable for cryptography https://docs.astral.sh/ruff/rules/suspicious-non-cryptographic-random-usage/
         user_agent = secrets.choice(user_agents)
@@ -100,22 +98,23 @@ class WebScraperModule:
         -------
             str: URL of the company's website or None if not found
         """
-        self.web_scraping_code = self.call(self.prompt, company_name)
+        self.company_prompt = self.prompt_generator.generate_prompt(company_name=company_name, source_type = "Annual Report")
 
+        response = self.prompt_generator.call(self.company_prompt)
         # Load the code and run it
-
-        # TODO if it is not correct retry giving the llm the error got
-
-        return
+        if response and response.text:
+            return response.text.strip()
+        return None
 
     def find_company_website(self, company_name: str) -> str | None:
         """
         Attempt to find the official website of a company.
-        
+
         Args:
             company_name (str): The name of the company.
-        
-        Returns:
+
+        Returns
+        -------
             str: The URL of the official company website, or None if not found.
         """
         try:
@@ -485,6 +484,7 @@ class WebScraperModule:
 
         # Find the web site of the company
         company_url = self.find_company_website(company_name)
+        company_url_ai = self.find_company_website_with_ai(company_name)
 
         # If it does not find it, try a a sec reserch (could be a US company)
         if not company_url:

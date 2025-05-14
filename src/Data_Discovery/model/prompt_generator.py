@@ -43,14 +43,13 @@ class PromptGenerator:
         # Base prompt template for generating the initial prompt
         self.base_prompt_template = base_prompt_template
 
-        # Initial instructions for optimization
-        self.optimization_instructions = ""
 
         # Dictionary to store company-specific prompts
         self.company_specific_prompts = {}
 
         # Counter for tracking the number of optimizations per company
         self.optimization_counter = {}
+        self.model = genai.GenerativeModel(self.config["model_name"])
 
     def generate_prompt(self, company_name: str, source_type: str) -> str:
         """
@@ -64,12 +63,7 @@ class PromptGenerator:
         -------
             str: Prompt optimize.
         """
-        # Verify if the company name is already in the specific prompts
-        if company_name in self.company_specific_prompts:
-            return self.company_specific_prompts[company_name]
-
-        # Istruction for optimization
-        optimization_text = self.optimization_instructions
+        optimization_text =  ""
 
         # Enrich the prompt with additional information if available
         company_info = self._get_company_additional_info(company_name)
@@ -451,3 +445,6 @@ class PromptGenerator:
                 return value  # Ritorna l'hint trovato
 
         return None  # No info found for this company
+
+    def call(self, prompt: str) -> str:
+        return self.model.generate_content(prompt)

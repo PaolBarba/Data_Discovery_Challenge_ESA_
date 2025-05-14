@@ -70,9 +70,6 @@ base_prompt_template = """
 
             Return a JSON object in this EXACT format, with NO ADDITIONAL TEXT:
 
-            json
-            Copia
-            Modifica
             {
                 "url": "EXACT_SOURCE_URL",
                 "year": "REFERENCE_YEAR",
