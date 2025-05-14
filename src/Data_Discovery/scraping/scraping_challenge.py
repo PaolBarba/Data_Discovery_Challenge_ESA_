@@ -33,9 +33,7 @@ class WebScraperModule:
 
     def __init__(
         self,
-        config_path: str = "src/Data_Discovery/config/scraping_config/config.yaml",
-        user_agent=None,
-    ):
+        config_path: str = "src/Data_Discovery/config/scraping_config/config.yaml"):
         """
         Inizializza il modulo di scraping.
 
@@ -50,11 +48,9 @@ class WebScraperModule:
         self.max_retries = self.config["max_retries"]
         # self.prompt = self.config["prompt"]
 
-        if user_agent is None:
-            # Rotating user agents to avoid being blocked
-            user_agents = self.config["user_agents"]
-            # Random choice of agents, random generator are not suitable for cryptography https://docs.astral.sh/ruff/rules/suspicious-non-cryptographic-random-usage/
-            user_agent = secrets.choice(user_agents)
+        user_agents = self.config["user_agents"]
+        # Random choice of agents, random generator are not suitable for cryptography https://docs.astral.sh/ruff/rules/suspicious-non-cryptographic-random-usage/
+        user_agent = secrets.choice(user_agents)
 
         self.session.headers.update(
             {

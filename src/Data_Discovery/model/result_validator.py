@@ -6,6 +6,8 @@ import sys
 
 import google.generativeai as genai
 from dotenv import load_dotenv
+from prompts.validation_prompt import generate_validation_prompt
+from utils import load_config_yaml
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,11 +39,12 @@ class ResultValidator:
     def __init__(self):
         """Inizializza il validatore dei risultati"""
         # Utilizziamo Gemini invece di Mistral
-        self.model = "gemini-1.5-pro-latest"  # Modello Gemini da utilizzare
+        self.config = self.load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
+        self.model_name = self.config.get("model_name")
 
     def validate_result(self, company_name, source_type, scraping_result):
         """
-        Valida i risultati dello scraping utilizzando Gemini
+        Valida i risultati dello scraping utilizzando Gemini.
 
         Args:
             company_name (str): Nome dell'azienda
@@ -57,37 +60,18 @@ class ResultValidator:
         source_description = scraping_result.get("source_description")
         confidence = scraping_result.get("confidence")
 
-        validation_prompt = f"""
-        Sei un VALIDATORE ESPERTO di fonti finanziarie per multinazionali.
-
-        CONTESTO:
-        - Azienda: {company_name}
-        - Tipo di fonte richiesta: {source_type}
-
-        RISULTATO DA VALIDARE:
-        - URL: {url}
-        - Anno fiscale: {year}
-        - Descrizione fonte: {source_description}
-        - Livello di confidenza dichiarato: {confidence}
-
-        TASK:
-        Valuta l'accuratezza e l'affidabilità di questo risultato. Considera:
-        1. L'URL sembra essere una fonte ufficiale e diretta al documento richiesto?
-        2. L'anno fiscale è plausibile e recente?
-        3. La fonte è appropriata per il tipo richiesto?
-
-        RESTITUISCI LA TUA VALUTAZIONE IN QUESTO FORMATO JSON:
-        {{
-            "is_valid": true/false,
-            "validation_score": 0-100,
-            "feedback": "Spiegazione dettagliata della tua valutazione",
-            "improvement_suggestions": "Suggerimenti specifici per migliorare la ricerca"
-        }}
-        """
+        validation_prompt = generate_validation_prompt(
+            company_name=company_name,
+            source_type=source_type,
+            url=url,
+            year=year,
+            source_description=source_description,
+            confidence=confidence,
+        )
 
         try:
-            # Utilizziamo l'API di Gemini invece di Mistral
-            model = genai.GenerativeModel(self.model)
+            # Use the Gemini API to validate the result
+            model = genai.GenerativeModel(self.model_name)
             response = model.generate_content(validation_prompt)
 
             if response:
@@ -97,11 +81,11 @@ class ResultValidator:
                     validation_result = {
                         "is_valid": False,
                         "validation_score": 0,
-                        "feedback": "Impossibile analizzare la risposta di validazione",
-                        "improvement_suggestions": "Riprova con un prompt più chiaro",
+                        "feedback": "Unable to parse the validation response",
+                        "improvement_suggestions": "Retry with a clearer prompt",
                     }
                 logger.info(
-                    f"Validazione completata per {company_name}: Score {validation_result.get('validation_score')}"
+                    f"Validation completed for {company_name}: Score {validation_result.get('validation_score')}"
                 )
                 return validation_result
             else:
@@ -117,12 +101,12 @@ class ResultValidator:
             return {
                 "is_valid": False,
                 "validation_score": 0,
-                "feedback": f"Errore durante la validazione: {e!s}",
-                "improvement_suggestions": "Verifica la connessione e riprova",
+                "feedback": f"Error during validation: {e!s}",
+                "improvement_suggestions": "Check the connection and try again",
             }
 
     def _extract_json_from_text(self, text):
-        """Estrae un oggetto JSON da una risposta testuale"""
+        """Extract JSON from the text response."""
         try:
             json_pattern = r"({[\s\S]*})"
             match = re.search(json_pattern, text)
@@ -131,5 +115,5 @@ class ResultValidator:
                 return json.loads(json_str)
             return json.loads(text)
         except Exception as e:
-            logger.warning(f"Impossibile estrarre JSON dalla risposta: {e}")
+            logger.warning(f"Unable to extract JSON from the response: {e}")
             return None

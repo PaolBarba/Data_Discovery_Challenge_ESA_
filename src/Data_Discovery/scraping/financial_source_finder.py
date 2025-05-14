@@ -63,21 +63,19 @@ class FinancialSourcesFinder:
         report_path = os.path.join(report_dir, "report_data.json")
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)
+        scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
 
         # Save data as JSON
         with Path.open(report_path, "w") as f:
             # Prepare the data to save
-            data = {"rl": url, "year": year, "source_description": source_description, "confidence": confidence}
-            json.dump(data, f, indent=4)
+            json.dump(scraping_result, f, indent=4)
 
-        # Prepare the scraping result
-        scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
-        logging.info(f"Result: {scraping_result}")
 
         # Validate the result
-        # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
+        validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
+        
+        
 
-        # Save the results in a specif folder
 
         # # Automatic tuning loop
         # iteration = 0
