@@ -72,7 +72,7 @@ class FinancialSourcesFinder:
 
 
         # Validate the result
-        validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
+        # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
 
 
 

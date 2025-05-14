@@ -1,5 +1,6 @@
 """Claude Challenge Code for scraping financial data sources."""
 
+import json
 import logging
 import re
 import secrets
@@ -12,7 +13,12 @@ from bs4 import BeautifulSoup
 from retry import retry
 from utils import load_config_yaml
 
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+import requests
+
 from Data_Discovery.model.prompt_generator import PromptGenerator
+from Data_Discovery.model.prompt_tuner import PromptTuner
 
 # Logging configuration
 logging.basicConfig(
@@ -47,6 +53,7 @@ class WebScraperModule:
         self.timeout = self.config["timeout"]
         self.max_retries = self.config["max_retries"]
         self.prompt_generator = PromptGenerator()
+        self.prompt_tuner = PromptTuner()
         user_agents = self.config["user_agents"]
         # Random choice of agents, random generator are not suitable for cryptography https://docs.astral.sh/ruff/rules/suspicious-non-cryptographic-random-usage/
         user_agent = secrets.choice(user_agents)
@@ -64,29 +71,6 @@ class WebScraperModule:
         # Add the delay to avoid being blocked by the server
         self.request_delay = self.config["request_delay"]
 
-    @retry(tries=1, delay=3, backoff=2, jitter=1)
-    def get_page(self, url: str) -> str | None:
-        """Load the HTML page from the given URL.
-
-        Args:
-            url (str): url of the page to load.
-
-        Returns
-        -------
-            str: HTML content of the page or None if failed to load
-        """
-        try:
-            # Sleep to avoid being blocked by the server
-            time.sleep(self.request_delay)
-
-            response = self.session.get(url, timeout=self.timeout)
-            if response.status_code == 200:
-                return response.text
-            logger.warning(f"Status code for the {url}: {response.status_code}")
-            return None
-        except Exception as e:
-            logger.warning(f"Errore durante il download della pagina {url}: {e}")
-            raise  # The retry decorator will handle the retry logic
 
     def find_company_website_with_ai(self, company_name: str) -> str | None:
         """
@@ -107,371 +91,8 @@ class WebScraperModule:
             return response.text.strip()
         return None
 
-    def find_company_website(self, company_name: str) -> str | None:
-        """
-        Attempt to find the official website of a company.
-
-        Args:
-            company_name (str): The name of the company.
-
-        Returns
-        -------
-            str: The URL of the official company website, or None if not found.
-        """
-        try:
-            company_tokens = self._tokenize_company_name(company_name.lower())
-            common_words = {"inc", "ltd", "the", "and", "corp", "co", "company", "group"}
-            significant_tokens = [t for t in company_tokens if len(t) > 2 and t not in common_words]
-
-            if significant_tokens:
-                base_tokens = significant_tokens[:3]
-                domains_to_try = []
-
-                # Generate permutations and try multiple TLDs
-                tlds = ["com", "org", "net", "co", "io"]
-                for tld in tlds:
-                    for i in range(len(base_tokens)):
-                        domain_name = ''.join(base_tokens[:i + 1])
-                        domains_to_try.extend([
-                            f"https://www.{domain_name}.{tld}/",
-                            f"https://{domain_name}.{tld}/"
-                        ])
-
-                for domain in domains_to_try:
-                    try:
-                        logger.info(f"Trying domain: {domain}")
-                        html = self.get_page(domain)
-                        if html and self._is_corporate_domain(domain, company_name):
-                            return self._normalize_url(domain)
-                    except Exception:
-                        continue
-
-            # Search with DuckDuckGo
-            search_url = f"https://html.duckduckgo.com/html?q={company_name}+official+website"
-            html = self.get_page(search_url)
-
-            if not html:
-                if self._could_be_us_company(company_name):
-                    logger.info(f"SEC fallback for: {company_name}")
-                    return None
-                return None
-
-            soup = BeautifulSoup(html, "html.parser")
-            links = soup.find_all("a", href=True)
-
-            for link in links:
-                url = link["href"]
-                if self._is_potential_corporate_domain(url, company_name):
-                    try:
-                        normalized_url = self._normalize_url(url)
-                        if normalized_url and self._is_corporate_domain(normalized_url, company_name):
-                            return normalized_url
-                    except Exception:
-                        continue
-
-            return None
-
-        except Exception as e:
-            logger.error(f"Error finding website for {company_name}: {e}")
-            return None
-
-
-    def _is_corporate_domain(self, url: str, company_name: str) -> bool:
-        """Check if a URL is likely the corporate domain."""
-        domain = urlparse(url).netloc
-
-        # remove the protocol and www
-        domain = domain.lower().replace("www.", "")
-        company_tokens = set(self._tokenize_company_name(company_name.lower()))
-
-        # Check if the domain contains significant tokens from the company name
-        return any(token in domain for token in company_tokens if len(token) > 2)
-
-    def _is_potential_corporate_domain(self, url: str, company_name: str) -> bool:
-        """Verifica meno stringente per identificare possibili domini aziendali."""
-        # Rimuovi parametri e frammenti
-        url = url.split("?")[0].split("#")[0]
-
-        # Ignora URL di motori di ricerca e siti noti non aziendali
-        non_corporate_domains = [
-            "google.",
-            "facebook.",
-            "youtube.",
-            "linkedin.",
-            "twitter.",
-            "amazon.",
-            "bing.",
-            "yahoo.",
-            "instagram.",
-            "wikipedia.",
-        ]
-
-        if any(nd in url.lower() for nd in non_corporate_domains):
-            return False
-
-        # Estrai il dominio
-        domain = urlparse(url).netloc
-        if not domain:
-            return False
-
-        # Verifica se parti del nome dell'azienda sono nel dominio
-        domain = domain.lower()
-        company_tokens = self._tokenize_company_name(company_name.lower())
-
-        # Controlla sovrapposizione tra i token significativi e il dominio
-        significant_tokens = [t for t in company_tokens if len(t) > 2 and t not in ["inc", "ltd", "the", "and", "corp"]]
-        return any(token in domain for token in significant_tokens)
-
-    def _tokenize_company_name(self, name: str) -> list:
-        """Split the company name into significant tokens."""
-        # Rimuovi elementi comuni come Inc, Corp, Ltd
-        cleaned = re.sub(
-            r"\b(inc|corp|corporation|ltd|limited|llc|group|holding|holdings)\b", "", name, flags=re.IGNORECASE
-        )
-
-        # Dividi in token
-        tokens = re.findall(r"\b\w+\b", cleaned)
-        return [t for t in tokens if len(t) > 1]
-
-    def _normalize_url(self, url: str) -> str:
-        """Normalize a URL ensuring it is complete and valid."""
-        if not (url.startswith("http://") or url.startswith("https://")):
-            url = "https://" + url.lstrip("/")
-
-        # Remove parameters and fragments
-        url = url.split("?")[0].split("#")[0]
-
-        # Ensure it ends with a slash
-        if not url.endswith("/"):
-            url += "/"
-
-        return url
-
-    def find_investor_relations_page(self, company_url: str) -> str | None:
-        """Find the investor relations page of the company.
-
-        Args:
-            company_url (str): URL of the company's website.
-
-        Returns
-        -------
-            str: URL of the investor relations page or None if not found
-        """
-        try:
-            # Scarica la home page
-            html = self.get_page(company_url)
-            if not html:
-                return None
-
-            soup = BeautifulSoup(html, "html.parser")
-
-            # Cerca link che contengono termini relativi a IR
-            ir_keywords = [
-                "investor",
-                "investors",
-                "investor relations",
-                "ir/",
-                "financials",
-                "shareholders",
-                "financial information",
-                "annual report",
-                "quarterly report",
-            ]
-
-            # Cerca nei menu principali e nei footer
-            for link in soup.find_all("a"):
-                text = link.get_text().lower().strip()
-                href = link.get("href")
-
-                if not href:
-                    continue
-
-                # Controlla se il testo del link o l'URL contiene parole chiave IR
-                if any(keyword in text or keyword in href.lower() for keyword in ir_keywords):
-                    return urljoin(company_url, href)
-
-            # Metodo alternativo: cerca nella sitemap se disponibile
-            sitemap_url = urljoin(company_url, "sitemap.xml")
-            try:
-                sitemap_content = self.get_page(sitemap_url)
-                if sitemap_content:
-                    sitemap_soup = BeautifulSoup(sitemap_content, "xml")
-                    for loc in sitemap_soup.find_all("loc"):
-                        url = loc.text
-                        if any(keyword in url.lower() for keyword in ir_keywords):
-                            return url
-            except Exception:
-                pass  # Ignora gli errori nella ricerca della sitemap
-
-            return None
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca della pagina IR su {company_url}: {e}")
-            return None
-
-    def find_financial_reports(self, ir_page_url: str, source_type: str = "Annual Report") -> list:
-        """Look for financial reports on the investor relations page.
-
-        Args:
-            ir_page_url (str): URL of the investor relations page.
-            source_type (str): Type of financial report (e.g., "Annual Report", "Quarterly Report", "Consolidated").
-
-        Returns
-        -------
-            list: List of tuples (url, year) of financial reports found.
-        """
-        try:
-            html = self.get_page(ir_page_url)
-            if not html:
-                return []
-
-            soup = BeautifulSoup(html, "html.parser")
-
-            # Determina le parole chiave in base al tipo di report
-            if source_type.lower() == "annual report" or source_type.lower() == "annual":
-                keywords = [
-                    "annual report",
-                    "annual filing",
-                    "10-k",
-                    "yearly report",
-                    "form 10-k",
-                    "annual financial report",
-                    "year-end report",
-                ]
-            elif source_type.lower() == "quarterly report" or source_type.lower() == "quarterly":
-                keywords = ["quarterly report", "quarterly filing", "10-q", "form 10-q", "q1", "q2", "q3", "q4"]
-            elif source_type.lower() == "consolidated":
-                keywords = [
-                    "consolidated financial",
-                    "consolidated statement",
-                    "consolidated report",
-                    "consolidated annual report",
-                    "consolidated results",
-                ]
-            else:
-                keywords = ["financial report", "financial statement", "financial results", "earnings report"]
-
-            # Cerca report sia nei link testuali che nei PDF/documenti
-            results = []
-
-            # Cerca link a documenti PDF o simili
-            for link in soup.find_all("a"):
-                text = link.get_text().strip()
-                href = link.get("href", "")
-
-                # Verifica se è un link a un documento finanziario
-                is_financial_doc = any(keyword in text.lower() or keyword in href.lower() for keyword in keywords)
-                is_document = href.lower().endswith((".pdf", ".doc", ".docx", ".xls", ".xlsx", ".html"))
-
-                if is_financial_doc and (is_document or "download" in href.lower()):
-                    # Estrai l'anno dal testo del link o dal nome del file
-                    year = self._extract_year_from_text(text) or self._extract_year_from_url(href)
-
-                    if year:
-                        full_url = urljoin(ir_page_url, href)
-                        results.append((full_url, year))
-
-            # Ordina i risultati per anno (più recente prima)
-            results.sort(key=lambda x: x[1], reverse=True)
-
-            return results
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca di report finanziari su {ir_page_url}: {e}")
-            return []
-
-    def _extract_year_from_text(self, text: str) -> str | None:
-        """Extract the year from the text."""
-        # Regex pattern to match various year formats
-        year_patterns = [
-            r"20\d{2}",  # Anno standard a 4 cifre
-            r"FY\s*20\d{2}",  # Anno fiscale
-            r"20\d{2}[/-]20\d{2}",  # Intervallo di anni
-        ]
-
-        for pattern in year_patterns:
-            match = re.search(pattern, text)
-            if match:
-                year_text = match.group(0)
-                # Extract only the year part (e.g., 2023 from FY2023 or 2023-2024)
-                return re.search(r"20\d{2}", year_text).group(0)
-
-        return None
-
-    def _extract_year_from_url(self, url: str) -> str | None:
-        """Extract the year from the URL."""
-        # Simile all'estrazione dal testo, ma specifico per URL
-        year_patterns = [
-            r"20\d{2}",  # Anno standard
-            r"FY-?20\d{2}",  # FY2023 o FY-2023
-            r"AR-?20\d{2}",  # AR2023 o AR-2023 (Annual Report)
-        ]
-
-        for pattern in year_patterns:
-            match = re.search(pattern, url)
-            if match:
-                year_text = match.group(0)
-                # Extract only the year part (e.g., 2023 from FY2023 or 2023-2024)
-                return re.search(r"20\d{2}", year_text).group(0)
-
-        return None
-
-    def find_sec_filings(self, company_name: str, form_type="10-K") -> list:
-        """Look for SEC filings for the company.
-
-        Args:
-            company_name (str): Name of the company
-            form_type (str): Type of SEC filing (e.g., "10-K", "10-Q").
-
-        Returns
-        -------
-            list: Lista di tuple (url, anno) dei filing trovati
-        """
-        try:
-            # Simulazione di ricerca SEC (in produzione si utilizzerebbe l'API SEC EDGAR)
-            # Per semplicità utilizziamo un approccio di scraping di base
-            search_url = f"https://www.sec.gov/cgi-bin/browse-edgar?company={company_name}&type={form_type}&count=10"
-            html = self.get_page(search_url)
-
-            if not html:
-                return []
-
-            soup = BeautifulSoup(html, "html.parser")
-            results = []
-
-            # Cerca le tabelle dei risultati
-            filing_items = soup.find_all("tr")
-            for item in filing_items:
-                # Cerca la data del filing
-                date_elem = item.find("td", {"nowrap": "nowrap"})
-                if not date_elem:
-                    continue
-
-                date_text = date_elem.get_text().strip()
-                year_match = re.search(r"20\d{2}", date_text)
-                if not year_match:
-                    continue
-
-                year = year_match.group(0)
-
-                # Cerca il link ai documenti
-                doc_link = item.find("a", text=re.compile(r"Documents"))
-                if not doc_link:
-                    continue
-
-                doc_url = urljoin("https://www.sec.gov", doc_link.get("href"))
-
-                results.append((doc_url, year))
-
-            # Ordina per anno (più recente prima)
-            results.sort(key=lambda x: x[1], reverse=True)
-
-            return results
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca di filing SEC per {company_name}: {e}")
-            return []
-
-    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
-        """
-        Scrape the financial sources for the given company name and source type.
+    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None: 
+        """Scrape the financial sources for the given company name and source type.
 
         Args:
             company_name (str): Nome dell'azienda
@@ -481,76 +102,67 @@ class WebScraperModule:
         -------
             tuple: (url, year, source_description, confidence)
         """
-        logger.info("Start %s (Type: %s)", company_name, source_type)
+        MAX_RETRIES = 2
+        attempt = 0
 
-        # Find the web site of the company
-#        company_url = self.find_company_website(company_name)
-        company_url = self.find_company_website_with_ai(company_name)
+        while attempt < MAX_RETRIES:
+            values = [None, None, None, None]
 
-        # If it does not find it, try a a sec reserch (could be a US company)
-        if not company_url:
-            logger.warning("Impossible to find %s", company_name)
+            if attempt == 0:
+                logger.info("Attempting initial fetch for company: %s", company_name)
+                raw_response = self.find_company_website_with_ai(company_name)
+            else:
+                logger.info("Retrying (%d/%d) with improved prompt...", attempt, MAX_RETRIES)
+                new_prompt = self.prompt_tuner.improve_prompt(values[0], company_name)
+                raw_response = self.prompt_generator.call(new_prompt)
 
-            # Prova con ricerca SEC se potrebbe essere un'azienda USA
-            if self._could_be_us_company(company_name):
-                logger.info(" Tentative for %s", company_name)
-                sec_results = self.find_sec_filings(company_name)
-                if sec_results:
-                    best_url, best_year = sec_results[0]
-                    return best_url, best_year, "SEC Filing", "MEDIA"
+            # Robust cleaning of markdown-wrapped response
+            cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response.strip(), flags=re.IGNORECASE)
+            logger.info("Cleaned response: '%s'", cleaned_response)
 
-            return None, None, None, "BASSA"
+            if not cleaned_response:
+                logger.warning("Attempt %d: Empty response for company '%s'.", attempt + 1, company_name)
+                attempt += 1
+                continue
 
-        logger.info("Find %s: %s", company_name, company_url)
+            try:
+                data = json.loads(cleaned_response)
+            except json.JSONDecodeError as e:
+                logger.error("Attempt %d: JSON decode error for company '%s': %s", attempt + 1, company_name, str(e))
+                attempt += 1
+                continue
 
-        # Look for the page regarding financial data
-        ir_page = self.find_investor_relations_page(company_url)
-        # If it does not find it, try a sec research, could be a US company
-        if not ir_page:
-            logger.warning("Impossible to find the IR for the %s", company_name)
+            values = list(data.values())
 
-            if self._could_be_us_company(company_name):
-                sec_results = self.find_sec_filings(company_name)
-                if sec_results:
-                    best_url, best_year = sec_results[0]
-                    return best_url, best_year, "SEC Filing", "MEDIA"
+            if not values or self.is_page_not_found(values[0]):
+                logger.warning("Attempt %d: Invalid or missing page for company '%s'.", attempt + 1, company_name)
+                attempt += 1
+                continue
+            else:
+                return tuple(values)
 
-            return None, None, None, "BASSA"
+        return tuple(values)
 
-        logger.info("Find IR page %s: %s", company_name, ir_page)
 
-        # Check the financial report on the IR page
-        reports = self.find_financial_reports(ir_page, source_type)
 
-        # If no reports found, try SEC filings as a fallback
-        if not reports and self._could_be_us_company(company_name):
-            form_type = "10-K" if source_type.lower() in ["annual", "annual report"] else "10-Q"
-            sec_results = self.find_sec_filings(company_name, form_type)
-            reports.extend(sec_results)
+    def is_page_not_found(self, url)-> bool:
+        """
+        Check if the page is not found (404 error).
 
-        if not reports:
-            logger.warning("No report found for %s", company_name)
-            return None, None, None, "BASSA"
+        Args:
+            url (str): URL to check.
 
-        # Select the most recent report
-        best_url, best_year = reports[0]
+        Returns
+        -------
+            bool: True if the page is not found, False otherwise.
+        """
+        session = requests.Session()
+        retries = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
 
-        # Determine source description and confidence level
-        if "sec.gov" in best_url:
-            source_description = "SEC Filing"
-            confidence = "ALTA"
-        elif best_url.lower().endswith(".pdf"):
-            source_description = f"{source_type} PDF"
-            confidence = "ALTA"
-        else:
-            source_description = source_type
-            confidence = "MEDIA"
-
-        logger.info("Find report for %s: %s (Year: %s)", company_name, best_url, best_year)
-
-        return best_url, best_year, source_description, confidence
-
-    def _could_be_us_company(self, company_name: str) -> bool:
-        """Check if the company name suggests it could be a US company."""
-        us_indicators = ["Inc", "Inc.", "Corp", "Corp.", "LLC", "LLP", "Co.", "USA", "America", "US "]
-        return any(indicator in company_name for indicator in us_indicators)
+        try:
+            response = session.get(url, timeout=10)
+            return response.status_code == 404
+        except requests.exceptions.RequestException as e:
+            logger.error("Request failed: %s", e)
+            return True

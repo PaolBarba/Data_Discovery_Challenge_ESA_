@@ -4,11 +4,12 @@ import logging
 import os
 import sys
 from datetime import datetime
-
+import time
+from google.api_core.exceptions import ResourceExhausted
 import google.generativeai as genai
 from dotenv import load_dotenv
 from prompts.base_prompt import base_prompt_improving
-from prompts.prompt_improving import improving_prompt
+from prompts.prompt_improving import improve_prompt
 from utils import load_config_yaml
 
 logging.basicConfig(
@@ -56,7 +57,7 @@ class PromptTuner:
         """
         return self.current_prompt.format(company_name=company_name, source_type=source_type)
 
-    def improve_prompt(self, company_name, source_type, scraping_result, validation_result):
+    def improve_prompt(self, report_url, company_name):
         """Improves the current prompt using feedback from Gemini.
 
         Args:
@@ -70,36 +71,35 @@ class PromptTuner:
             str: New improved prompt
         """
         # Improves the current prompt using feedback from Gemini
-        improvement_prompt = improving_prompt(
-            company_name=company_name,
-            current_prompt=self.current_prompt,
-            source_type=source_type,
-            scraping_result=scraping_result,
-            validation_result=validation_result,
-        )
+        return improve_prompt.format(
+            report_url=report_url,
+            company_name=company_name)
 
-        try:
-            response = self.model.generate_content(improvement_prompt)
-            new_prompt = response.text.strip()
+    
+    def call(self, prompt: str) -> str:
+        retries = 0
+        max_retries = 5
 
-            # Save the tuning history
-            self.tuning_history.append(
-                {
-                    "company": company_name,
-                    "old_prompt": self.current_prompt,
-                    "new_prompt": new_prompt,
-                    "scraping_result": scraping_result,
-                    "validation_result": validation_result,
-                    "timestamp": datetime.now().isoformat(),
-                }
-            )
+        while retries < max_retries:
+            response = None
+            try:
+                response = self.model.generate_content(prompt)
+            except ResourceExhausted as e:
+                logger.warning("Quota exceeded: %s", e.message)
+                # Try to extract retry delay from exception, or default to 60 seconds
+                delay = getattr(e, "retry_delay", 60)
+                delay = delay.seconds if hasattr(delay, "seconds") else 60
+                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
+                time.sleep(delay)
+            except Exception as e:
+                logger.error("Unhandled exception during model call: %s", e)
+                break  # Or re-raise depending on your error handling policy
 
-            # Update the current prompt with the new one
-            self.current_prompt = new_prompt
+            if response:
+                logger.info("Response received successfully.")
+                return response
 
-            logger.info("Prompt Improved for the company:", extra={"company": company_name})
-        except Exception as e:
-            logger.exception("An error occurred while improving the prompt", extra={"error": str(e)})
-            return self.current_prompt  # Keep the current prompt in case of error
+            retries += 1
 
-        return new_prompt
+        logger.error("Failed to get a response after %d retries.", max_retries)
+        return None
