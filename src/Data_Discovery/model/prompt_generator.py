@@ -46,7 +46,6 @@ class PromptGenerator:
         # Base prompt template for generating the initial prompt
         self.base_prompt_template = base_prompt_template
 
-
         # Dictionary to store company-specific prompts
         self.company_specific_prompts = {}
 
@@ -66,7 +65,7 @@ class PromptGenerator:
         -------
             str: Prompt optimize.
         """
-        optimization_text =  ""
+        optimization_text = ""
 
         # Enrich the prompt with additional information if available
         company_info = self._get_company_additional_info(company_name)

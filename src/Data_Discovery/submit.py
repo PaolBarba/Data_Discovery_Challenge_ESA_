@@ -1,4 +1,5 @@
 """Submission script for Data Discovery."""
+
 from Data_Discovery.submission.submission import DataDiscoverySubmission
 
 

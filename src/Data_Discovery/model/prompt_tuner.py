@@ -3,11 +3,11 @@
 import logging
 import os
 import sys
-from datetime import datetime
 import time
-from google.api_core.exceptions import ResourceExhausted
+
 import google.generativeai as genai
 from dotenv import load_dotenv
+from google.api_core.exceptions import ResourceExhausted
 from prompts.base_prompt import base_prompt_improving
 from prompts.prompt_improving import improve_prompt
 from utils import load_config_yaml
@@ -71,12 +71,10 @@ class PromptTuner:
             str: New improved prompt
         """
         # Improves the current prompt using feedback from Gemini
-        return improve_prompt.format(
-            report_url=report_url,
-            company_name=company_name)
+        return improve_prompt.format(report_url=report_url, company_name=company_name)
 
-    
     def call(self, prompt: str) -> str:
+        """Call the model with the given prompt and handle retries for quota errors."""
         retries = 0
         max_retries = 5
 
@@ -92,7 +90,7 @@ class PromptTuner:
                 logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
                 time.sleep(delay)
             except Exception as e:
-                logger.error("Unhandled exception during model call: %s", e)
+                logger.exception("Unhandled exception during model call: %s", e)  # noqa: TRY401
                 break  # Or re-raise depending on your error handling policy
 
             if response:

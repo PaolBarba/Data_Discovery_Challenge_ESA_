@@ -80,4 +80,3 @@ base_prompt_template = """
 
     IMPORTANT: If you find multiple sources, select ONLY the best one based on the criteria above. Accuracy is critical.
 """
-

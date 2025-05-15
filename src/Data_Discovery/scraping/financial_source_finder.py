@@ -59,10 +59,10 @@ class FinancialSourcesFinder:
         # Perform initial scraping
         url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
 
-        report_dir = os.path.join("reports", company_name) #
-        report_path = os.path.join(report_dir, "report_data.json")
+        report_dir = os.path.join("reports", company_name)  #  # noqa: PTH118
+        report_path = os.path.join(report_dir, "report_data.json")  # noqa: PTH118
         # Ensure the directory exists
-        os.makedirs(report_dir, exist_ok=True)
+        os.makedirs(report_dir, exist_ok=True)  # noqa: PTH103
         scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
 
         # Save data as JSON
@@ -70,13 +70,8 @@ class FinancialSourcesFinder:
             # Prepare the data to save
             json.dump(scraping_result, f, indent=4)
 
-
         # Validate the result
         # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
-
-
-
-
 
         # # Automatic tuning loop
         # iteration = 0
