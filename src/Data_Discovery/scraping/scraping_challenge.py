@@ -114,10 +114,10 @@ class WebScraperModule:
             else:
                 logger.info("Retrying (%d/%d) with improved prompt...", attempt, MAX_RETRIES)
                 new_prompt = self.prompt_tuner.improve_prompt(values[0], company_name)
-                raw_response = self.prompt_generator.call(new_prompt)
+                raw_response = self.prompt_tuner.call(new_prompt).text.strip()
 
             # Robust cleaning of markdown-wrapped response
-            cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response.strip(), flags=re.IGNORECASE)
+            cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response, flags=re.IGNORECASE)
             logger.info("Cleaned response: '%s'", cleaned_response)
 
             if not cleaned_response:

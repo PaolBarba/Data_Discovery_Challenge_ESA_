@@ -1,4 +1,4 @@
-model_name: "gemini-1.5-flash-8b"
+model_name: "gemini-2.5-flash-preview-04-17"
 dotenv_path: src/Data_Discovery/config/model_config/.env
 temperature: 0.2
 top_p: 0.95
