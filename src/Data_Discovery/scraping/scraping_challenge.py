@@ -113,7 +113,8 @@ class WebScraperModule:
                 if model_response:
                     raw_response = model_response.text.strip()
             # Robust cleaning of markdown-wrapped response
-            cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response, flags=re.IGNORECASE)
+            if raw_response:
+                cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response, flags=re.IGNORECASE)
             logger.info("Cleaned response: '%s'", cleaned_response)
 
             if not cleaned_response:
