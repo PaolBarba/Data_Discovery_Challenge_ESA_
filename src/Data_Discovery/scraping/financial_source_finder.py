@@ -56,19 +56,35 @@ class FinancialSourcesFinder:
         """
         logger.info("Starting search for %s (type: %s)", company_name, source_type)
 
-        # Perform initial scraping
-        url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
+
+
+        url, year, source_description, confidence , page_status = self.scraper.scrape_financial_sources(company_name, source_type)
 
         report_dir = os.path.join("reports", company_name)  #  # noqa: PTH118
         report_path = os.path.join(report_dir, "report_data.json")  # noqa: PTH118
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)  # noqa: PTH103
-        scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence}
+        scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence , "page_status": page_status}
+
+        if Path(report_path).exists():
+            with Path(report_path).open("r") as f:
+                try:
+                    data = json.load(f)
+                    if not isinstance(data, list):
+                        data = [data]  # Wrap single dict into a list
+                except json.JSONDecodeError:
+                    data = []
+        else:
+            data = []
+
+        # Append the new result
+        data.append(scraping_result)
+
 
         # Save data as JSON
         with Path.open(report_path, "w") as f:
             # Prepare the data to save
-            json.dump(scraping_result, f, indent=4)
+            json.dump(data, f, indent=4)
 
         # Validate the result
         # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)

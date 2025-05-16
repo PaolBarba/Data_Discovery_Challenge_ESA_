@@ -25,6 +25,9 @@ data_discovery/*
 .AppleDouble
 .LSOverride
 
+#Genereated_code
+generated_code/*
+
 # Icon must end with two \r
 Icon
 

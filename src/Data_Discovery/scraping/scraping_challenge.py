@@ -2,13 +2,15 @@
 
 import json
 import logging
+import os
 import re
 import secrets
 import sys
+from pathlib import Path
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore
+from requests.packages.urllib3.util.retry import Retry  # type: ignore  # noqa: PGH003
 from utils import load_config_yaml
 
 from Data_Discovery.model.prompt_generator import PromptGenerator
@@ -21,13 +23,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("financial_sources_finder.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-
-
-# TODO: The class has too many responsibilities, consider splitting it into smaller classes
-# TODO: Configuration must be externalized, consider using a config file or environment variables
-# TODO: Check if some code is repeated, if so, consider creating a helper function
-# TODO: Check if some code can be simplified, if so, consider using a simpler approach
-# TODO: Check if some code is useless, if so, consider removing it
 
 
 class WebScraperModule:
@@ -64,100 +59,113 @@ class WebScraperModule:
 
         # Add the delay to avoid being blocked by the server
         self.request_delay = self.config["request_delay"]
+   
+    def _create_retry_session(self) -> requests.Session:
+        """Create a requests session with retry strategy."""
+        session = requests.Session()
+        retries = Retry(total=self.max_retries, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retries)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        return session
 
     def find_company_website_with_ai(self, company_name: str) -> str | None:
-        """
-        Look for the official website of the company.
-
-        Args:
-            company_name (str): Name of the company
-
-        Returns
-        -------
-            str: URL of the company's website or None if not found
-        """
-        self.company_prompt = self.prompt_generator.generate_prompt(
-            company_name=company_name, source_type="Annual Report"
-        )
-
-        response = self.prompt_generator.call(self.company_prompt)
-        # Load the code and run it
-        if response and response.text:
-            return response.text.strip()
+        """Use AI to find the official website of a company."""
+        try:
+            prompt = self.prompt_generator.generate_prompt(company_name, source_type="Annual Report")
+            response = self.prompt_generator.call(prompt)
+            if response and response.text:
+                return response.text.strip()
+        except Exception as e:
+            logger.error("AI failed to find company website: %s", e)
         return None
 
-    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
-        """Scrape the financial sources for the given company name and source type.
+    def ai_web_scraping(self, company_name: str, source_type: str) -> dict | None:
+        """Generate and safely execute AI scraping code."""
+        prompt = self.prompt_generator.generate_web_scraping_prompt(company_name, source_type)
+        response = self.prompt_generator.call(prompt)
 
-        Args:
-            company_name (str): Nome dell'azienda
-            source_type (str): Tipo di fonte finanziaria
+        if not response or not response.text:
+            logger.warning("Empty AI scraping response for %s", company_name)
+            return None
 
-        Returns
-        -------
-            tuple: (url, year, source_description, confidence)
-        """
-        max_retries = 2
-        attempt = 0
-
-        while attempt < max_retries:
-            values = [None, None, None, None]
-
-            if attempt == 0:
-                logger.info("Attempting initial fetch for company: %s", company_name)
-                raw_response = self.find_company_website_with_ai(company_name)
-            else:
-                logger.info("Retrying (%d/%d) with improved prompt...", attempt, max_retries)
-                new_prompt = self.prompt_tuner.improve_prompt(values[0], company_name)
-                model_response = self.prompt_tuner.call(new_prompt)
-                if model_response:
-                    raw_response = model_response.text.strip()
-            # Robust cleaning of markdown-wrapped response
-            if raw_response:
-                cleaned_response = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_response, flags=re.IGNORECASE)
-            logger.info("Cleaned response: '%s'", cleaned_response)
-
-            if not cleaned_response:
-                logger.warning("Attempt %d: Empty response for company '%s'.", attempt + 1, company_name)
-                attempt += 1
-                continue
-
-            try:
-                data = json.loads(cleaned_response)
-            except json.JSONDecodeError as e:
-                logger.exception("Attempt %d: JSON decode error for company '%s': %s", attempt + 1, company_name, str(e))  # noqa: TRY401
-                attempt += 1
-                continue
-
-            values = list(data.values())
-
-            if not values or self.is_page_not_found(values[0]):
-                logger.warning("Attempt %d: Invalid or missing page for company '%s'.", attempt + 1, company_name)
-                attempt += 1
-                continue
-            else:
-                return tuple(values)
-
-        return tuple(values)
-
-    def is_page_not_found(self, url) -> bool:
-        """
-        Check if the page is not found (404 error).
-
-        Args:
-            url (str): URL to check.
-
-        Returns
-        -------
-            bool: True if the page is not found, False otherwise.
-        """
-        session = requests.Session()
-        retries = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
-        session.mount("https://", HTTPAdapter(max_retries=retries))
+        code_text = re.sub(r"^```(?:python)?|```$", "", response.text.strip(), flags=re.MULTILINE)
+        os.makedirs("generated_code", exist_ok=True)
+        code_file_path = os.path.join("generated_code", f"{company_name}_{source_type}.py")
 
         try:
-            response = session.get(url, timeout=10)
-            return response.status_code == 404  # noqa: TRY300
-        except requests.exceptions.RequestException as e:
-            logger.exception("Request failed: %s", e)  # noqa: TRY401
+            with Path(code_file_path).open("w", encoding="utf-8") as f:
+                f.write(code_text)
+        except Exception as e:
+            logger.error("Failed to write AI-generated code: %s", e)
+            return None
+
+        logger.info("Generated scraping code saved to: %s", code_file_path)
+        return self.load_and_run_code(code_file_path)
+
+    def load_and_run_code(self, code_file_path: str) -> dict | None:
+        """Dynamically load and execute a Python script. Be cautious with this."""
+        try:
+            code = Path(code_file_path).read_text(encoding="utf-8")
+            code = re.sub(r"^```(?:python)?|```$", "", code.strip(), flags=re.MULTILINE)
+
+            module_vars = {"__file__": code_file_path, "__name__": "__main__", "__package__": None}
+            exec(compile(code, code_file_path, "exec"), module_vars)  # noqa: S102
+            return module_vars.get("result")  # Assuming the script sets a variable named 'result'
+        except Exception as e:
+            logger.exception("Execution of AI-generated code failed: %s", e)
+            return None
+
+    def is_page_not_found(self, url: str) -> bool:
+        """Check if the URL returns a 403/404 error."""
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            return response.status_code in (403, 404)
+        except requests.RequestException as e:
+            logger.warning("Failed to check URL: %s", e)
             return True
+
+    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
+        """Try to find financial sources using prompt tuning, fall back to AI scraping."""
+        attempt = 0
+        cleaned_response = None
+        url = ""
+        while attempt < self.max_retries:
+            try:
+                if attempt == 0:
+                    logger.info("Attempting to fetch website for '%s'", company_name)
+                    raw_response = self.find_company_website_with_ai(company_name)
+                else:
+                    logger.info("Retrying with tuned prompt (%d/%d)", attempt, self.max_retries)
+                    improved_prompt = self.prompt_tuner.improve_prompt(url, company_name)
+                    tuned_response = self.prompt_tuner.call(improved_prompt)
+                    raw_response = tuned_response.text.strip() if tuned_response else None
+
+                if not raw_response:
+                    attempt += 1
+                    continue
+
+                cleaned_response = re.sub(r"^```(?:json)?|```$", "", raw_response.strip(), flags=re.IGNORECASE)
+                data = json.loads(cleaned_response)
+                url = data.get("url")
+
+                if not url or self.is_page_not_found(url):
+                    logger.warning("Invalid or missing page for '%s' on attempt %d", company_name, attempt + 1)
+                    attempt += 1
+                    continue
+
+                data["response_status"] = "Page found"
+                return tuple(data.values())
+
+            except (json.JSONDecodeError, Exception) as e:
+                logger.warning("Error parsing or processing response on attempt %d: %s", attempt + 1, e)
+                attempt += 1
+
+        logger.info("Falling back to AI web scraping for '%s'", company_name)
+        data = self.ai_web_scraping(company_name, source_type)
+        if not data:
+            return None, None, None, None, "Page not found"
+
+        url = data.get("url")
+        data["response_status"] = "Page not found" if self.is_page_not_found(url) else "Page found"
+        return tuple(data.values())

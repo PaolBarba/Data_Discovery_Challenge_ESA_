@@ -11,12 +11,12 @@ Data_Discovery_Challenge_ESA_/
 │   ├── Data_Discovery/
 │   │   ├── config/                     # Configuration files
 │   │   │   ├── data_preparation_config/
-│   │   │   │   └── config.yaml         
+│   │   │   │   └── config.yaml
 │   │   │   ├── model_config/
-│   │   │   │   └── config.yaml         
+│   │   │   │   └── config.yaml
 │   │   │   ├── scraping_config/
-│   │   │   │   └── config.yaml         
-│   │   │   └──                         
+│   │   │   │   └── config.yaml
+│   │   │   └──
 │   │   ├── model/                      # Model scripts
 │   │   │   ├── prompt_generato.py
 │   │   │   ├── prompt_tuner.py
@@ -82,7 +82,7 @@ The code is structured into the following main classes:
   - Uses a specific “judge” prompt to ask Gemini whether the URL is correct, relevant, specific to the request, and whether the year is accurate and the most recent.
   - Provides structured feedback (`validate_result`) used for prompt optimization.
 
-### `FinancialSourceFinder` 
+### `FinancialSourceFinder`
 
 - **Purpose:** Orchestrate the entire workflow.
 - **Key Functions:**
@@ -105,7 +105,7 @@ For each company in the input list:
      - **Generate a Scraping Script with AI**: Not yet implemented
         It will query the model in order to generate a script to scrape financial data and save in the specific folder
     If after some retry the url is not valid try another approach:
-    - **Naive search** Not yet implemented       
+    - **Naive search** Not yet implemented
    - **Parsing:** The AI’s JSON response is parsed.
 
    - **Validation:** If the AI returned a result, the `Validator` (a separate AI call) evaluates the result's quality: (Not yet implemented)
@@ -119,5 +119,3 @@ For each company in the input list:
 3. **(Output):** The result (validated or the latest obtained after N iterations) is saved along with the validation status, received feedback, and scraping data.
 4. **Generalization**: If more than one url is valid, generalize the code in order to give more than 1 ulr.
 5. **(Final Save):** All results are consolidated and saved into a CSV file.
-
-

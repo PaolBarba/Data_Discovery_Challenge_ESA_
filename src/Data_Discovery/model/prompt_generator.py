@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from google.api_core.exceptions import ResourceExhausted
 from utils import load_config_yaml
 
-from Data_Discovery.prompts.base_prompt import base_prompt_template
+from Data_Discovery.prompts.base_prompt import base_prompt_template, web_scraping_prompt
 
 # Configurazione logging
 logging.basicConfig(
@@ -48,6 +48,7 @@ class PromptGenerator:
 
         # Dictionary to store company-specific prompts
         self.company_specific_prompts = {}
+        self.web_scraping_prompt_template = web_scraping_prompt
 
         # Counter for tracking the number of optimizations per company
         self.optimization_counter = {}
@@ -447,6 +448,9 @@ class PromptGenerator:
                 return value  # Ritorna l'hint trovato
 
         return None  # No info found for this company
+
+    def generate_web_scraping_prompt(self, company_name: str, source_type: str) -> str:
+        return self.web_scraping_prompt_template.format(company_name=company_name, source_type=source_type)
 
     def call(self, prompt: str) -> str:
         retries = 0
