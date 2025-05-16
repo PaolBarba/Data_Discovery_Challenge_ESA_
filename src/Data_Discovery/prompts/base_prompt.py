@@ -81,70 +81,66 @@ Return a JSON object ONLY, with EXACT fields and no extra text or commentary:
 IMPORTANT: If multiple sources are found, select ONLY the best one according to the above criteria. Accuracy and relevance are critical.
 """
 web_scraping_prompt = """
-YOU ARE A SENIOR FINANCIAL DATA ENGINEER specializing in corporate disclosures and regulatory filings with 10+ years of experience in authoritative financial data sourcing.
+🧠 ROLE:
+You are a SENIOR FINANCIAL DATA ANALYST and TECHNICAL WEB SCRAPING ENGINEER. Your expertise lies in accurately identifying, extracting, and verifying official financial data sources for global companies using clean and reliable Python code.
 
-MISSION:
-Develop a high-precision web scraping solution to locate and extract the most reliable financial data source for: "{company_name}", specifically targeting: "{source_type}".
+🎯 OBJECTIVE:
+Develop a Python script to locate and extract the most credible, authoritative, and specific financial data source for the company: "{company_name}", targeting the source type: "{source_type}".
 
-CRITICAL SUCCESS FACTORS:
-1. Source Authority: Prioritize in this order:
-   - Official SEC/regulatory filings (10-K, 10-Q, 8-K)
-   - Investor Relations-hosted financial reports
-   - Earnings transcripts with GAAP reconciliation
-   - Press releases with financial tables
-2. Data Freshness: Favor most recent disclosures (within last 12 months)
-3. Machine-Readability: Prefer structured data (HTML tables, XBRL) over PDFs
+📌 TASK DESCRIPTION:
+Write a robust, production-grade Python script to programmatically find and extract verified financial data for the specified company. The script must:
+- Target trusted and up-to-date sources
+- Validate data accuracy and traceability
+- Return structured metadata in a clean dictionary
 
-TECHNICAL SPECIFICATIONS:
-- Primary Tools: 
-  * `requests` with custom headers mimicking financial analyst tools
-  * `BeautifulSoup` with focused DOM traversal logic
-  * `lxml` for XPath parsing where needed
-- Advanced Requirements:
-  * SEC EDGAR endpoint awareness (https://www.sec.gov/edgar/searchedgar/companysearch.html)
-  * Investor Relations page pattern recognition (common URL structures)
-  * Financial document fingerprinting (identifying "Earnings Release" vs. "Annual Report")
-  * Intelligent retry logic with exponential backoff
-- Validation:
-  * Cross-check extracted year with document effective dates
-  * Verify GAAP/IFRS compliance markers
-  * Detect and flag preliminary vs. audited results
+🔍 TARGET SOURCE TYPES:
+- Company’s official Investor Relations site
+- Official press releases
+- Regulatory filings (e.g., SEC EDGAR)
+- Major financial news platforms (e.g., Bloomberg, Reuters)
 
-OUTPUT SPECIFICATION:
-The final output must be a Python dictionary with rigorous validation:
+🛠️ TECHNICAL REQUIREMENTS:
+The script must include the following:
+
+- HTTP requests (e.g., requests)
+- HTML parsing and navigation (e.g., BeautifulSoup)
+- Intelligent link discovery (to detect likely financial data pages)
+- Metadata extraction: publication year, page type, etc.
+- Error handling for:
+  - HTTP request failures
+  - Malformed/unstructured pages
+  - Missing expected content
+- A confidence scoring function evaluating:
+  - Source type reliability
+  - Clarity of financial disclosure
+  - Structural consistency of the page
+
+📤 OUTPUT FORMAT:
+The script’s main function must return a dictionary formatted as:
 
 {{
-    "url": "CANONICAL_SOURCE_URL",       # Permanent link to authoritative document
-    "year": "YYYY",                     # Fiscal year end (format YYYY-MM-DD if exact date available)
-    "source_description":               # Brief description of the source (e.g., '10-K filing', 'Q2 earnings release')
-    "confidence": LOW/MEDIUM/HIGH,      # Confidence level based on source authority and data quality
+    "url": "EXACT_SOURCE_URL",           # Direct and accessible link to the financial data
+    "year": "REFERENCE_YEAR",            # Fiscal or calendar year of relevance
+    "confidence": "HIGH/MEDIUM/LOW",     # Level of confidence in accuracy and reliability
+    "source_type": "SOURCE_TYPE"         # Must match one of: 'Investor Relations', 'SEC Filing', 'Press Release', 'News Article', etc.
 }}
 
-PROHIBITED:
-- Any third-party APIs (free or paid)
-- Headless browsers or automation tools
-- PDF parsing (focus on native HTML/XBRL sources)
-- Residential proxy networks
+🚫 CONSTRAINTS:
+- DO NOT use paid APIs, headless browsers, or automation tools like Selenium
+- Use only publicly available and reputable sources
+- Ensure your code is:
+  - Clean and modular
+  - Fully commented for readability and maintainability
+  - Focused on precision and correctness over breadth
 
-ERROR HANDLING:
-Implement tiered exception management:
-1. HTTP errors (retry 5xx, cache 404s)
-2. Content validation (require minimum financial keywords)
-3. Temporal fallbacks (if current year unavailable)
+✅ EXECUTION REQUIREMENT:
+The script must be executable directly with the following block:
 
-DEPLOYMENT READINESS:
-The solution must include:
-- Proper User-Agent rotation
-- Respectful crawl delays (≥2s between requests)
-- Local caching mechanism (avoid duplicate fetches)
-- Unit test stubs for core functions
-
-Do not include explanations in the code. The output must be only the python code.
-The final implementation should be production-grade financial data pipeline code, not just a prototype. Focus on institutional-quality data sourcing with full audit trail.
-
-EXECUTION:
 if __name__ == "__main__":
     result = main()
 
+Save the final dictionary output in the variable named result.
 
+🎯 PRIORITY:
+Emphasize source authority, data reliability, and traceability. Accuracy is more important than coverage.
 """

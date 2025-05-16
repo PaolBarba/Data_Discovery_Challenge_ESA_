@@ -25,8 +25,6 @@ API_KEY = os.environ.get("GOOGLE_API_KEY")
 genai.configure(api_key=API_KEY)
 
 
-# TODO: The saving must be done in a specific folder, consider creating a folder for the results
-
 
 class PromptTuner:
     """Module for automatic prompt optimization based on feedback."""
