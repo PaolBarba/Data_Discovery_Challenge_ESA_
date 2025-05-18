@@ -15,6 +15,10 @@
    ```bash
     python  -m venv data_discovery
     ```
+or 
+   ```bash
+    conda create --name data_discovery python=3.11
+   ```
 
 4. Activate the virtual environment.
 

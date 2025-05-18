@@ -13,6 +13,8 @@ dependencies = [
   "google-generativeai",
   "pandas",
   "python-dotenv",
+  "futures",
+  "pyyaml",
   "beautifulsoup4",
   "retry"
 ]
