@@ -15,7 +15,7 @@
    ```bash
     python  -m venv data_discovery
     ```
-or 
+or
    ```bash
     conda create --name data_discovery python=3.11
    ```

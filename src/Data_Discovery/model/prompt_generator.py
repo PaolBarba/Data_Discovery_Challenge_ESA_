@@ -1,13 +1,11 @@
 """Prompt generator for financial data source finder."""
 
 import logging
-import os
 import sys
 import time
 from urllib.parse import urlparse
 
 import google.generativeai as genai
-from dotenv import load_dotenv
 from google.api_core.exceptions import ResourceExhausted
 from utils import load_config_yaml
 
@@ -20,21 +18,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("financial_sources_finder.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-
-# Configurare l'API di Google Gemini
-load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
-
-# TODO: The class has too many responsibilities, consider splitting it into smaller classes
-# TODO: Configuration must be externalized, consider using a config file or environment variables
-# TODO: All the code must be written in English, consider translating the comments and docstrings
-# TODO: Check if some code is repeated, if so, consider creating a helper function
-# TODO: Check if some code can be simplified, if so, consider using a simpler approach
-# TODO: Check if some code is useless, if so, consider removing it
-# TODO: Optimization instructions should be more specific and clear
-# TODO: Prompt must be written in English, consider translating it
-# TODO: The prompt must be loaded from a file or a database, consider using a config file or environment variables
 
 
 class PromptGenerator:
@@ -74,9 +57,7 @@ class PromptGenerator:
             optimization_text += f"\n\nAdditioanl Information: {company_info}"
 
         # Generate the final prompt
-        return self.base_prompt_template.format(
-            company_name=company_name, source_type=source_type, optimization_instructions=optimization_text
-        )
+        return self.base_prompt_template.format(company_name=company_name, source_type=source_type, optimization_instructions=optimization_text)
 
     def optimize_prompt(self, company_name: str, feedback: dict, current_prompt: str, scraping_results: tuple) -> str:
         """
@@ -103,9 +84,7 @@ class PromptGenerator:
             return self._generate_scraping_based_prompt(company_name, scraping_results)
 
         # Generate the optimization request
-        optimization_request = self._create_optimization_request(
-            company_name, feedback, current_prompt, scraping_results
-        )
+        optimization_request = self._create_optimization_request(company_name, feedback, current_prompt, scraping_results)
 
         try:
             # Ask Google Gemini to optimize the prompt
@@ -137,10 +116,10 @@ class PromptGenerator:
                 optimized_prompt,
             )
 
-            return optimized_prompt
+            return optimized_prompt  # noqa: TRY300
 
         except Exception as e:
-            logger.error(f"Errore durante l'ottimizzazione del prompt per {company_name}: {e}")
+            logger.exception(f"Error during prompt optimization for {company_name}: {e}")  # noqa: G004
             # In case of failure, use the scraping results as a fallback
             return self._generate_scraping_based_prompt(company_name, scraping_results)
 
@@ -202,8 +181,8 @@ class PromptGenerator:
             try:
                 domain = urlparse(url).netloc
                 domain_hint = f"\n- Consider the domain {domain} which seems promising for this search"
-            except:
-                pass
+            except Exception as e:
+                logger.exception("Error parsing URL domain: %s", e)
 
         year_hint = ""
         if year:
@@ -215,9 +194,7 @@ class PromptGenerator:
         - The previous search had a confidence level of '{conf}', try to improve it
         """
 
-        return self.base_prompt_template.format(
-            company_name=company_name, source_type=desc or "Annual Report", optimization_instructions=optimization_text
-        )
+        return self.base_prompt_template.format(company_name=company_name, source_type=desc or "Annual Report", optimization_instructions=optimization_text)
 
     def _get_company_additional_info(self, company_name: str) -> str:
         """
@@ -377,7 +354,7 @@ class PromptGenerator:
             "hbis group co. ltd.": "Hebei Iron and Steel. Azienda Cinese (Statale?). Dati potrebbero essere sul sito cinese o limitati.",
             "nippon steel corporation": "Azienda Giapponese. Cerca 'Investor Relations'. FY finisce Marzo.",
             "mitsui & co ltd": "Azienda Giapponese. Cerca 'Investor Relations'. FY finisce Marzo.",
-            "h & m hennes & mauritz": "H&M. Azienda Svedese (AB). Cerca 'Investors'. FY finisce Novembre.",  # Messo qui per H&M
+            "h & m hennes & mauritz": "H&M. Azienda Svedese (AB). Cerca 'Investors'. FY finisce Novembre.",
             "toyota motor corporation": "Azienda Giapponese. Cerca 'Investor Relations' sul sito global.toyota/en/ir/. FY finisce Marzo.",
             "itochu corporation": "Azienda Giapponese. Cerca 'Investor Relations'. FY finisce Marzo.",
             "nippon telegraph and telephone": "NTT. Azienda Giapponese. Cerca 'Investor Relations'. FY finisce Marzo.",
@@ -444,15 +421,17 @@ class PromptGenerator:
             # Should we prioritize longer/more complete matches if multiple keys are possible?
             # For now, we use the first match found.
             if key in normalized_company_name:
-                logger.debug(f"Found specific hint for '{company_name}' based on the key '{key}'")
+                logger.debug(f"Found specific hint for '{company_name}' based on the key '{key}'")  # noqa: G004
                 return value  # Ritorna l'hint trovato
 
         return None  # No info found for this company
 
     def generate_web_scraping_prompt(self, company_name: str, source_type: str) -> str:
+        """Generate a web scraping prompt based on the company name and source type."""
         return self.web_scraping_prompt_template.format(company_name=company_name, source_type=source_type)
 
     def call(self, prompt: str) -> str:
+        """ "Call the model with retry logic for handling quota issues."""  # noqa: D210
         retries = 0
         max_retries = 5
 
@@ -468,7 +447,7 @@ class PromptGenerator:
                 logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
                 time.sleep(delay)
             except Exception as e:
-                logger.error("Unhandled exception during model call: %s", e)
+                logger.exception("Unhandled exception during model call: %s", e)
                 break  # Or re-raise depending on your error handling policy
 
             if response:

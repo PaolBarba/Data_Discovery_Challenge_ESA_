@@ -59,7 +59,7 @@ class WebScraperModule:
 
         # Add the delay to avoid being blocked by the server
         self.request_delay = self.config["request_delay"]
-   
+
     def _create_retry_session(self) -> requests.Session:
         """Create a requests session with retry strategy."""
         session = requests.Session()

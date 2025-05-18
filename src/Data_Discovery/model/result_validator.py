@@ -1,11 +1,11 @@
+"""Result Validator Module."""
+
 import json
 import logging
-import os
 import re
 import sys
 
 import google.generativeai as genai
-from dotenv import load_dotenv
 from prompts.validation_prompt import generate_validation_prompt
 from utils import load_config_yaml
 
@@ -16,28 +16,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configurare l'API di Google Gemini
-load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
-
-
-# TODO: The class has too many responsibilities, consider splitting it into smaller classes
-# TODO: Configuration must be externalized, consider using a config file or environment variables
-# TODO: All the code must be written in English, consider translating the comments and docstrings
-# TODO: Check if some code is repeated, if so, consider creating a helper function
-# TODO: Check if some code can be simplified, if so, consider using a simpler approach
-# TODO: Check if some code is useless, if so, consider removing it
-# TODO: Optimization instructions should be more specific and clear
-# TODO: Prompt must be written in English, consider translating it
-# TODO: The prompt must be loaded from a file or a database, consider using a config file or environment variables
-
 
 class ResultValidator:
-    """Modulo per la validazione dei risultati tramite Gemini API"""
+    """Module for validating results using the Gemini API."""
 
     def __init__(self):
-        """Inizializza il validatore dei risultati"""
+        """Initialize the result validator."""
         # Utilizziamo Gemini invece di Mistral
         self.config = load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
         self.model_name = self.config.get("model_name")
@@ -84,11 +68,9 @@ class ResultValidator:
                         "feedback": "Unable to parse the validation response",
                         "improvement_suggestions": "Retry with a clearer prompt",
                     }
-                logger.info(
-                    f"Validation completed for {company_name}: Score {validation_result.get('validation_score')}"
-                )
+                logger.info("Validation completed for %s: Score %s", company_name, validation_result.get("validation_score"))
                 return validation_result
-            else:
+            else:  # noqa: RET505
                 logger.error("Errore API Gemini: Nessuna risposta ricevuta")
                 return {
                     "is_valid": False,
@@ -97,7 +79,7 @@ class ResultValidator:
                     "improvement_suggestions": "Verifica la connessione e riprova",
                 }
         except Exception as e:
-            logger.error(f"Errore durante la validazione: {e}")
+            logger.exception("Errore durante la validazione")
             return {
                 "is_valid": False,
                 "validation_score": 0,

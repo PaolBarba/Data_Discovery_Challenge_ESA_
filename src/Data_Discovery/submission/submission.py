@@ -15,7 +15,7 @@ class DataDiscoverySubmission:
     """Handles data preparation and submission for the Data Discovery project."""
 
     def __init__(self):
-        self.config = load_config_yaml("src/Data_Discovery/config/data_preparation_config/config.yaml")
+        self.config = load_config_yaml("src/Data_Discovery/config/submission_config/config.yaml")
         self.original_data_path = self.config.get("original_data_path")
         self.reports_path = self.config.get("reports_path")
         self.submission_path = self.config.get("submission_path")
@@ -32,16 +32,8 @@ class DataDiscoverySubmission:
                 data = json.load(f)
 
             # Filter and sort relevant entries
-            found_entries = [
-                item for item in data
-                if item.get("page_status") == "Page found"
-            ]
-            found_entries.sort(
-                key=lambda x: (
-                    -int(x.get("year") or 0),
-                    -CONFIDENCE_ORDER.get(x.get("confidence", "").upper(), -1)
-                )
-            )
+            found_entries = [item for item in data if item.get("page_status") == "Page found"]
+            found_entries.sort(key=lambda x: (-int(x.get("year") or 0), -CONFIDENCE_ORDER.get(x.get("confidence", "").upper(), -1)))
             company_data[file] = found_entries[:5]  # limit to top 5
 
         return company_data

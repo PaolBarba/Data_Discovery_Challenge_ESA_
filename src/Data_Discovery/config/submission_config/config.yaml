@@ -1,0 +1,3 @@
+original_data_path : "dataset/discovery.csv"
+reports_path : "reports"
+submission_path : "submission"

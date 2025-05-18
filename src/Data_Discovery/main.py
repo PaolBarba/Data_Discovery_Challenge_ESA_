@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from dotenv import load_dotenv
 from scraping.financial_source_finder import FinancialSourcesFinder
 from tqdm import tqdm
 
@@ -37,17 +38,18 @@ def main():
     args = parser.parse_args()
 
     # Configure the API key if provided
-    api_key = args.api_key or os.environ.get("GOOGLE_API_KEY")
+    env_path = Path("src/Data_Discovery/config/model_config") / ".env"
+    load_dotenv(dotenv_path=env_path)
+
+    api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
-        logger.error("Gemini API key not provided. Set GOOGLE_API_KEY or use --api-key")
+        logger.error("Gemini API key not provided. Set GOOGLE_API_KEY or use --api-key, if not created go to the official website: https://aistudio.google.com/apikey")
         sys.exit(1)
 
     df = pd.read_csv(args.input, sep=";")
 
     # Initialize the finder
-    finder = FinancialSourcesFinder(
-        api_key=api_key, max_tuning_iterations=args.max_tuning, validation_threshold=args.validation_threshold
-    )
+    finder = FinancialSourcesFinder(api_key=api_key, max_tuning_iterations=args.max_tuning, validation_threshold=args.validation_threshold)
 
     # Prepare batches of companies
     companies = df["NAME"].tolist()

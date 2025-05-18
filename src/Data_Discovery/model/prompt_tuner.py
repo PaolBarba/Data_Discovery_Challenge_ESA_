@@ -1,12 +1,10 @@
 """Prompt Tuner Module."""
 
 import logging
-import os
 import sys
 import time
 
 import google.generativeai as genai
-from dotenv import load_dotenv
 from google.api_core.exceptions import ResourceExhausted
 from prompts.base_prompt import base_prompt_improving
 from prompts.prompt_improving import improve_prompt
@@ -18,12 +16,6 @@ logging.basicConfig(
     handlers=[logging.FileHandler("financial_sources_finder.log"), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-
-# Configurare l'API di Google Gemini
-load_dotenv(dotenv_path="src/Data_Discovery/config/model_config/.env")
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-genai.configure(api_key=API_KEY)
-
 
 
 class PromptTuner:

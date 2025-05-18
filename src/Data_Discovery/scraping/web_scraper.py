@@ -130,9 +130,7 @@ class WebScraperModule:
             company_tokens = self._tokenize_company_name(company_name.lower())
 
             # Remove common tokens that are not significant for the domain
-            significant_tokens = [
-                t for t in company_tokens if len(t) > 2 and t not in ["inc", "ltd", "the", "and", "corp"]
-            ]
+            significant_tokens = [t for t in company_tokens if len(t) > 2 and t not in ["inc", "ltd", "the", "and", "corp"]]
             if significant_tokens:
                 # Try to build a domain from the first two significant tokens
                 company_domain = significant_tokens[0].lower()
@@ -238,9 +236,7 @@ class WebScraperModule:
     def _tokenize_company_name(self, name: str) -> list:
         """Split the company name into significant tokens."""
         # Rimuovi elementi comuni come Inc, Corp, Ltd
-        cleaned = re.sub(
-            r"\b(inc|corp|corporation|ltd|limited|llc|group|holding|holdings)\b", "", name, flags=re.IGNORECASE
-        )
+        cleaned = re.sub(r"\b(inc|corp|corporation|ltd|limited|llc|group|holding|holdings)\b", "", name, flags=re.IGNORECASE)
 
         # Dividi in token
         tokens = re.findall(r"\b\w+\b", cleaned)

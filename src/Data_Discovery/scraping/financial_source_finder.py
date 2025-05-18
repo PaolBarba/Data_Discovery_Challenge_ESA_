@@ -56,15 +56,19 @@ class FinancialSourcesFinder:
         """
         logger.info("Starting search for %s (type: %s)", company_name, source_type)
 
-
-
-        url, year, source_description, confidence , page_status = self.scraper.scrape_financial_sources(company_name, source_type)
+        url, year, source_description, confidence, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
 
         report_dir = os.path.join("reports", company_name)  #  # noqa: PTH118
         report_path = os.path.join(report_dir, "report_data.json")  # noqa: PTH118
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)  # noqa: PTH103
-        scraping_result = {"url": url, "year": year, "source_description": source_description, "confidence": confidence , "page_status": page_status}
+        scraping_result = {
+            "url": url,
+            "year": year,
+            "source_description": source_description,
+            "confidence": confidence,
+            "page_status": page_status,
+        }
 
         if Path(report_path).exists():
             with Path(report_path).open("r") as f:
@@ -79,7 +83,6 @@ class FinancialSourcesFinder:
 
         # Append the new result
         data.append(scraping_result)
-
 
         # Save data as JSON
         with Path.open(report_path, "w") as f:

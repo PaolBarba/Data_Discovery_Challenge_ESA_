@@ -38,7 +38,7 @@ dev = [
 path = "src/Data_Discovery/__init__.py"
 
 [tool.ruff]
-line-length = 120
+line-length = 180
 
 [tool.ruff.lint]
 select = [  # See https://docs.astral.sh/ruff/rules/
