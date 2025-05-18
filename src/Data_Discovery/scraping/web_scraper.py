@@ -87,10 +87,10 @@ class WebScraperModule:
             response = self.session.get(url, timeout=self.timeout)
             if response.status_code == 200:
                 return response.text
-            logger.warning(f"Status code for the {url}: {response.status_code}")
-            return None
+            logger.warning("Status code for the %s: %s", url, response.status_code)
+            return None  # noqa: TRY300
         except Exception as e:
-            logger.warning(f"Errore durante il download della pagina {url}: {e}")
+            logger.warning("Errore durante il download della pagina %s: %s", url, e)
             raise  # The retry decorator will handle the retry logic
 
     def find_company_website_with_ai(self, company_name: str) -> str | None:
