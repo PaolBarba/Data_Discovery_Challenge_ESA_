@@ -118,8 +118,8 @@ class PromptGenerator:
 
             return optimized_prompt  # noqa: TRY300
 
-        except Exception as e:
-            logger.exception(f"Error during prompt optimization for {company_name}: {e}")  # noqa: G004
+        except Exception:
+            logger.exception("Error during prompt optimization for %s", company_name)
             # In case of failure, use the scraping results as a fallback
             return self._generate_scraping_based_prompt(company_name, scraping_results)
 
@@ -182,7 +182,7 @@ class PromptGenerator:
                 domain = urlparse(url).netloc
                 domain_hint = f"\n- Consider the domain {domain} which seems promising for this search"
             except Exception as e:
-                logger.exception("Error parsing URL domain: %s", e)
+                logger.exception("Error parsing URL domain: %s", e)  # noqa: TRY401
 
         year_hint = ""
         if year:
@@ -408,7 +408,7 @@ class PromptGenerator:
             "edizione": "Holding Famiglia Benetton (Italia). Dati potrebbero essere per le controllate (es. Mundys/Atlantia).",
             "atlas uk bidco limited": "Veicolo di acquisizione UK. Probabilmente non ha report propri, cercare la parent company.",
             # Mantieni gli originali se non sovrascritti
-            "apple inc.": "Azienda USA. Focus su SEC filings (10-K per Annual, 10-Q per Quarterly) e pagina IR ufficiale: investor.apple.com. Anno fiscale termina a fine Settembre.",
+            "apple inc.": "Azienda USA. Focus su SEC filings (10-K per Annual, 10-Q per Quarterly) e pagina IR ufficiale: investor.apple.com. Anno fiscale termina a fine Settembre.",  # noqa: E501
             # Siemens già coperto sopra
             # Toyota già coperto sopra
             # Unilever già coperto sopra

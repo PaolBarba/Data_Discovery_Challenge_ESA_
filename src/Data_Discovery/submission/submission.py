@@ -1,4 +1,4 @@
-"""Data preparation and submission module for the Data Discovery project."""
+"""Data preparation and submission module for the Data Discovery project."""  # noqa: INP001
 
 import json
 import logging
@@ -25,8 +25,8 @@ class DataDiscoverySubmission:
         """Return a dict mapping company names to a sorted list of up to 5 (url, year) entries."""
         company_data = {}
         for file in os.listdir(self.reports_path):
-            json_path = os.path.join(self.reports_path, f"{file}/report_data.json")
-            if not os.path.isfile(json_path):
+            json_path = Path(self.reports_path) / file / "report_data.json"
+            if not json_path.is_file():
                 continue
             with Path.open(json_path, "r") as f:
                 data = json.load(f)
@@ -45,7 +45,7 @@ class DataDiscoverySubmission:
 
         new_rows = []
 
-        for idx, row in df_submission.iterrows():
+        for _idx, row in df_submission.iterrows():
             name = row["NAME"]
             if row["TYPE"] == "FIN_REP" and name in company_data:
                 entries = company_data[name]

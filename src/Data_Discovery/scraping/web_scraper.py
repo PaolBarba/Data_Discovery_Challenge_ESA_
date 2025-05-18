@@ -147,11 +147,11 @@ class WebScraperModule:
 
                 for domain in potential_domains:
                     try:
-                        logger.info(f"Attempting direct access to {domain}")
+                        logger.info("Attempting direct access to %s", domain)
                         html = self.get_page(domain)
                         if html:
                             return domain
-                    except Exception:
+                    except (requests.RequestException, ValueError):  # noqa: PERF203
                         continue
 
             #  DuckDuckGo search for the official website
@@ -161,7 +161,7 @@ class WebScraperModule:
             if not html:
                 # Fallback: prova con un approccio SEC per aziende USA
                 if self._could_be_us_company(company_name):
-                    logger.info(f"Tentativo di ricerca SEC diretta per {company_name}")
+                    logger.info("Attempting direct SEC search for %s", company_name)
                     return None  # Questo farà sì che il codice passi direttamente alla ricerca SEC
                 return None
 
@@ -182,9 +182,9 @@ class WebScraperModule:
                 if url and self._is_potential_corporate_domain(url, company_name):
                     return self._normalize_url(url)
 
-            return None
-        except Exception as e:
-            logger.error(f"Error while searching for the website of {company_name}: {e}")
+            return None  # noqa: TRY300
+        except Exception:
+            logger.exception("Error while searching for the website of %s", company_name)
             return None
 
     def _is_corporate_domain(self, url: str, company_name: str) -> bool:
@@ -244,7 +244,7 @@ class WebScraperModule:
 
     def _normalize_url(self, url: str) -> str:
         """Normalize a URL ensuring it is complete and valid."""
-        if not (url.startswith("http://") or url.startswith("https://")):
+        if not (url.startswith(("http://", "https://"))):
             url = "https://" + url.lstrip("/")
 
         # Remove parameters and fragments
@@ -309,12 +309,12 @@ class WebScraperModule:
                         url = loc.text
                         if any(keyword in url.lower() for keyword in ir_keywords):
                             return url
-            except Exception:
-                pass  # Ignora gli errori nella ricerca della sitemap
+            except (requests.RequestException, ValueError):
+                logger.warning("Sitemap non disponibile o errore durante il download: %s", sitemap_url)
 
-            return None
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca della pagina IR su {company_url}: {e}")
+            return None  # noqa: TRY300
+        except Exception:
+            logger.exception("Errore durante la ricerca della pagina IR su %s", company_url)
             return None
 
     def find_financial_reports(self, ir_page_url: str, source_type: str = "Annual Report") -> list:
@@ -382,9 +382,9 @@ class WebScraperModule:
             # Ordina i risultati per anno (più recente prima)
             results.sort(key=lambda x: x[1], reverse=True)
 
-            return results
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca di report finanziari su {ir_page_url}: {e}")
+            return results  # noqa: TRY300
+        except Exception:
+            logger.exception("Errore durante la ricerca di report finanziari su %s", ir_page_url)
             return []
 
     def _extract_year_from_text(self, text: str) -> str | None:
@@ -473,9 +473,9 @@ class WebScraperModule:
             # Ordina per anno (più recente prima)
             results.sort(key=lambda x: x[1], reverse=True)
 
-            return results
-        except Exception as e:
-            logger.error(f"Errore durante la ricerca di filing SEC per {company_name}: {e}")
+            return results  # noqa: TRY300
+        except Exception:
+            logger.exception("Errore durante la ricerca di filing SEC per %s", company_name)
             return []
 
     def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:

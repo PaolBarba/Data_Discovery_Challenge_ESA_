@@ -1,6 +1,3 @@
-"""Class for managing the data discovery models."""
+"""Class for managing the data discovery models."""  # noqa: N999
 
-from csv import __version__
-
-
-__version__ == "0.0.0"
+__version__ = "0.0.0"
