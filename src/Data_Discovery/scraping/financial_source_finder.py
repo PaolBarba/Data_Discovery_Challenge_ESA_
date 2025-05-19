@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import google.generativeai as genai
 from model.result_validator import ResultValidator
@@ -43,7 +44,7 @@ class FinancialSourcesFinder:
         self.max_tuning_iterations = max_tuning_iterations
         self.validation_threshold = validation_threshold
 
-    def find_financial_source(self, company_name: str, source_type="Annual Report") -> dict:
+    def find_financial_source(self, company_name: str, source_type: str = "Annual Report") -> dict[str, Any]:
         """
         Find the financial source for a company with automatic tuning.
 
@@ -57,7 +58,7 @@ class FinancialSourcesFinder:
         """
         logger.info("Starting search for %s (type: %s)", company_name, source_type)
 
-        url, year, source_description, confidence, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
+        url, year, confidence , source_description, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
 
         report_dir = os.path.join("reports", company_name)  #  # noqa: PTH118
         report_path = os.path.join(report_dir, "report_data.json")  # noqa: PTH118
@@ -135,7 +136,7 @@ class FinancialSourcesFinder:
         # return final_result
         return scraping_result
 
-    def process_companies_batch(self, companies_batch: list, source_type: str = "Annual Report") -> list:
+    def process_companies_batch(self, companies_batch: list[Any], source_type: str = "Annual Report") -> list[Any]:
         """
         Process a batch of companies in parallel.
 

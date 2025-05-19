@@ -1,4 +1,4 @@
-"""Data preparation and submission module for the Data Discovery project."""  # noqa: INP001
+"""Data preparation and submission module for the Data Discovery project."""
 
 import logging
 import os

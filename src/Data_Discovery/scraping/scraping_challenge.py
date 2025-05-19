@@ -6,10 +6,11 @@ import re
 import secrets
 import sys
 from pathlib import Path
+from typing import Any
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore  # noqa: PGH003
+from urllib3.util.retry import Retry
 from utils import load_config_yaml, save_code
 
 from Data_Discovery.model.prompt_generator import PromptGenerator
@@ -79,7 +80,7 @@ class WebScraperModule:
             logger.exception("AI failed to find company website")
         return None
 
-    def ai_web_scraping(self, company_name: str, source_type: str) -> dict | None:
+    def ai_web_scraping(self, company_name: str, source_type: str) -> object | None:
         """Generate and safely execute AI scraping code."""
         prompt = self.prompt_generator.generate_web_scraping_prompt(company_name, source_type)
         response = self.prompt_generator.call(prompt)
@@ -101,7 +102,7 @@ class WebScraperModule:
         logger.info("Generated scraping code saved to: %s", code_file_path)
         return self.load_and_run_code(code_file_path)
 
-    def load_and_run_code(self, code_file_path: Path) -> dict | None:
+    def load_and_run_code(self, code_file_path: Path) -> object | None:
         """Dynamically load and execute a Python script. Be cautious with this."""
         try:
             code = Path(code_file_path).read_text(encoding="utf-8")
@@ -124,7 +125,7 @@ class WebScraperModule:
         else:
             return response.status_code in (403, 404)
 
-    def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
+    def scrape_financial_sources(self, company_name: str, source_type: str) -> Any:
         """Try to find financial sources using prompt tuning, fall back to AI scraping."""
         attempt = 0
         cleaned_response = None
@@ -167,4 +168,6 @@ class WebScraperModule:
 
         url = data.get("url")
         data["response_status"] = "Page not found" if self.is_page_not_found(url) else "Page found"
+        if len(data.values()) != 5:
+            return None, None, None, None, "Page not found"
         return tuple(data.values())

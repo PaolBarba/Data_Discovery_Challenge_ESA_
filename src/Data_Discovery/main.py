@@ -56,7 +56,7 @@ def main():
 
     batches = [companies[i : i + args.batch_size] for i in range(0, len(companies), args.batch_size)]
 
-    all_results = []
+    all_results: list = []
 
     with ThreadPoolExecutor(max_workers=args.threads) as executor:
         futures = []

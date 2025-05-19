@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
+from google.generativeai.types import generation_types
 from utils import load_config_yaml
 
 from Data_Discovery.prompts.base_prompt import base_prompt_template, web_scraping_prompt
@@ -430,7 +431,7 @@ class PromptGenerator:
         """Generate a web scraping prompt based on the company name and source type."""
         return self.web_scraping_prompt_template.format(company_name=company_name, source_type=source_type)
 
-    def call(self, prompt: str) -> str:
+    def call(self, prompt: str) -> generation_types.GenerateContentResponse | None:
         """ "Call the model with retry logic for handling quota issues."""  # noqa: D210
         retries = 0
         max_retries = 5
