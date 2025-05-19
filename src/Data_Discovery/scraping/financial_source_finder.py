@@ -40,9 +40,6 @@ class FinancialSourcesFinder:
             genai.configure(api_key=api_key)
 
         self.scraper = WebScraperModule()
-        self.prompt_tuner = PromptTuner()
-        self.validator = ResultValidator()
-
         self.max_tuning_iterations = max_tuning_iterations
         self.validation_threshold = validation_threshold
 
@@ -82,10 +79,10 @@ class FinancialSourcesFinder:
 
         report_dir = Path("reports") / company_name
         report_path = report_dir / "report_data.json"
-        # Check if the report already exists
-        if report_path.exists():
-            logger.info("Report already exists for %s, loading existing report", company_name)
-            return self._load_existing_report(report_path)
+        # Check if the report already exists, Comment the following line for a full run
+        # if report_path.exists():
+        #     logger.info("Report already exists for %s, loading existing report", company_name)
+        #     return self._load_existing_report(report_path)
 
         url, year, confidence, source_description, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
 
