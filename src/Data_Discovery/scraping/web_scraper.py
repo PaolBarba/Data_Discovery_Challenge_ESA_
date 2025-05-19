@@ -1,4 +1,4 @@
-"""Claude Challenge Code for scraping financial data sources."""
+"""Challenge Code for scraping financial data sources."""
 
 import logging
 import re
@@ -21,20 +21,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# TODO: The class has too many responsibilities, consider splitting it into smaller classes
-# TODO: Configuration must be externalized, consider using a config file or environment variables
-# TODO: Check if some code is repeated, if so, consider creating a helper function
-# TODO: Check if some code can be simplified, if so, consider using a simpler approach
-# TODO: Check if some code is useless, if so, consider removing it
-
-
 class WebScraperModule:
     """Module for web scraping financial data sources."""
 
     def __init__(
         self,
         config_path: str = "src/Data_Discovery/config/scraping_config/config.yaml",
-        user_agent=None,
+        user_agent: str | None = None,
     ):
         """
         Inizializza il modulo di scraping.
@@ -105,10 +98,6 @@ class WebScraperModule:
             str: URL of the company's website or None if not found
         """
         self.web_scraping_code = self.call(self.prompt, company_name)
-
-        # Load the code and run it
-
-        # TODO if it is not correct retry giving the llm the error got
 
         return
 

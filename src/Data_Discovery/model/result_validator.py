@@ -87,7 +87,7 @@ class ResultValidator:
                 "improvement_suggestions": "Check the connection and try again",
             }
 
-    def _extract_json_from_text(self, text):
+    def _extract_json_from_text(self, text: str) -> dict | None:
         """Extract JSON from the text response."""
         try:
             json_pattern = r"({[\s\S]*})"
@@ -96,6 +96,6 @@ class ResultValidator:
                 json_str = match.group(1)
                 return json.loads(json_str)
             return json.loads(text)
-        except Exception as e:
-            logger.warning(f"Unable to extract JSON from the response: {e}")
+        except json.JSONDecodeError as e:
+            logger.warning("Unable to extract JSON from the response: %s", e)
             return None

@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 import re
 import secrets
 import sys
@@ -11,7 +10,7 @@ from pathlib import Path
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore  # noqa: PGH003
-from utils import load_config_yaml
+from utils import load_config_yaml, save_code
 
 from Data_Discovery.model.prompt_generator import PromptGenerator
 from Data_Discovery.model.prompt_tuner import PromptTuner
@@ -76,8 +75,8 @@ class WebScraperModule:
             response = self.prompt_generator.call(prompt)
             if response and response.text:
                 return response.text.strip()
-        except Exception as e:
-            logger.error("AI failed to find company website: %s", e)
+        except Exception:
+            logger.exception("AI failed to find company website")
         return None
 
     def ai_web_scraping(self, company_name: str, source_type: str) -> dict | None:
@@ -90,20 +89,19 @@ class WebScraperModule:
             return None
 
         code_text = re.sub(r"^```(?:python)?|```$", "", response.text.strip(), flags=re.MULTILINE)
-        os.makedirs("generated_code", exist_ok=True)
-        code_file_path = os.path.join("generated_code", f"{company_name}_{source_type}.py")
+        Path("generated_code").mkdir(parents=True, exist_ok=True)
+        code_file_path = Path("generated_code") / f"{company_name}_{source_type}.py"
 
         try:
-            with Path(code_file_path).open("w", encoding="utf-8") as f:
-                f.write(code_text)
-        except Exception as e:
-            logger.error("Failed to write AI-generated code: %s", e)
+            save_code(code_text, code_file_path)
+        except Exception:
+            logger.exception("Failed to write AI-generated code")
             return None
 
         logger.info("Generated scraping code saved to: %s", code_file_path)
         return self.load_and_run_code(code_file_path)
 
-    def load_and_run_code(self, code_file_path: str) -> dict | None:
+    def load_and_run_code(self, code_file_path: Path) -> dict | None:
         """Dynamically load and execute a Python script. Be cautious with this."""
         try:
             code = Path(code_file_path).read_text(encoding="utf-8")
@@ -112,18 +110,19 @@ class WebScraperModule:
             module_vars = {"__file__": code_file_path, "__name__": "__main__", "__package__": None}
             exec(compile(code, code_file_path, "exec"), module_vars)  # noqa: S102
             return module_vars.get("result")  # Assuming the script sets a variable named 'result'
-        except Exception as e:
-            logger.exception("Execution of AI-generated code failed: %s", e)
+        except Exception:
+            logger.exception("Execution of AI-generated code failed")
             return None
 
     def is_page_not_found(self, url: str) -> bool:
         """Check if the URL returns a 403/404 error."""
         try:
             response = self.session.get(url, timeout=self.timeout)
-            return response.status_code in (403, 404)
         except requests.RequestException as e:
             logger.warning("Failed to check URL: %s", e)
             return True
+        else:
+            return response.status_code in (403, 404)
 
     def scrape_financial_sources(self, company_name: str, source_type: str) -> tuple | None:
         """Try to find financial sources using prompt tuning, fall back to AI scraping."""

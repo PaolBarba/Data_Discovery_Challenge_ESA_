@@ -1,12 +1,11 @@
 """Data preparation and submission module for the Data Discovery project."""  # noqa: INP001
 
-import json
 import logging
 import os
 from pathlib import Path
 
 import pandas as pd
-from utils import load_config_yaml
+from utils import load_config_yaml, load_json_obj
 
 CONFIDENCE_ORDER = {"LOW": 0, "MEDIUM": 1, "HIGH": 2}
 
@@ -21,15 +20,14 @@ class DataDiscoverySubmission:
         self.submission_path = self.config.get("submission_path")
         self.dataset = pd.read_csv(self.original_data_path, sep=";")
 
-    def prepare_data(self):
+    def prepare_data(self) -> dict:
         """Return a dict mapping company names to a sorted list of up to 5 (url, year) entries."""
         company_data = {}
         for file in os.listdir(self.reports_path):
             json_path = Path(self.reports_path) / file / "report_data.json"
             if not json_path.is_file():
                 continue
-            with Path.open(json_path, "r") as f:
-                data = json.load(f)
+            data = load_json_obj(json_path)
 
             # Filter and sort relevant entries
             found_entries = [item for item in data if item.get("page_status") == "Page found"]
@@ -38,7 +36,7 @@ class DataDiscoverySubmission:
 
         return company_data
 
-    def popoluate_data(self):
+    def popoluate_data(self) -> pd.DataFrame:
         """Populate the dataset with up to 5 rows per company using sorted report entries."""
         df_submission = self.dataset.copy()
         company_data = self.prepare_data()
@@ -59,14 +57,14 @@ class DataDiscoverySubmission:
 
         return pd.DataFrame(new_rows)
 
-    def save_submission(self, df_submission):
+    def save_submission(self, df_submission: pd.DataFrame) -> None:
         """Save the prepared submission DataFrame to a CSV file."""
-        os.makedirs(self.submission_path, exist_ok=True)  # noqa: PTH103
-        submission_path = os.path.join(self.submission_path, "submission.csv")  # noqa: PTH118
+        Path(self.submission_path).mkdir(parents=True, exist_ok=True)
+        submission_path = Path(self.submission_path) / "submission.csv"
         df_submission.to_csv(submission_path, index=False, sep=";")
-        logging.info(f"Submission file saved at {submission_path}")  # noqa: G004
+        logging.info("Submission file saved at %s", submission_path)
 
-    def run(self):
+    def run(self) -> None:
         """Run the data preparation and submission process."""
         df_submission = self.popoluate_data()
         self.save_submission(df_submission)

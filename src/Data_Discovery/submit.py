@@ -3,7 +3,7 @@
 from Data_Discovery.submission.submission import DataDiscoverySubmission
 
 
-def main():
+def main() -> None:
     """Run the Data Discovery submission process."""
     submission = DataDiscoverySubmission()
     submission.run()

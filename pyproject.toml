@@ -39,6 +39,7 @@ path = "src/Data_Discovery/__init__.py"
 
 [tool.ruff]
 line-length = 180
+exclude = ["src/Data_Discovery/scraping/web_scraper.py"]
 
 [tool.ruff.lint]
 select = [  # See https://docs.astral.sh/ruff/rules/

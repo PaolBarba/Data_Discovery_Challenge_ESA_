@@ -446,9 +446,9 @@ class PromptGenerator:
                 delay = delay.seconds if hasattr(delay, "seconds") else 60
                 logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
                 time.sleep(delay)
-            except Exception as e:
-                logger.exception("Unhandled exception during model call: %s", e)
-                break  # Or re-raise depending on your error handling policy
+            except Exception:
+                logger.exception("Unhandled exception during model call")
+                break
 
             if response:
                 logger.info("Response received successfully.")

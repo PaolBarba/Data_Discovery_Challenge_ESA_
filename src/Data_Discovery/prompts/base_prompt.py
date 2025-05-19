@@ -28,7 +28,7 @@ IMPORTANT NOTES:
 - Avoid URLs that require authentication or that redirect to non-official domains.
 - When multiple versions of the same report exist, always select the most recent.
 - If the exact requested source_type is unavailable, indicate this clearly in the notes and provide the closest possible alternative.
-- Maintain professional tone and factual accuracy throughout."""
+- Maintain professional tone and factual accuracy throughout."""  # noqa: E501
 
 base_prompt_template = """
 YOU ARE A FINANCIAL RESEARCH EXPERT specializing in locating authoritative and official financial data sources for multinational companies.
@@ -94,7 +94,7 @@ Write a robust, production-grade Python script to programmatically find and extr
 - Return structured metadata in a clean dictionary
 
 🔍 TARGET SOURCE TYPES:
-- Company’s official Investor Relations site
+- Company's official Investor Relations site
 - Official press releases
 - Regulatory filings (e.g., SEC EDGAR)
 - Major financial news platforms (e.g., Bloomberg, Reuters)
@@ -116,7 +116,7 @@ The script must include the following:
   - Structural consistency of the page
 
 📤 OUTPUT FORMAT:
-The script’s main function must return a dictionary formatted as:
+The script's main function must return a dictionary formatted as:
 
 {{
     "url": "EXACT_SOURCE_URL",           # Direct and accessible link to the financial data
@@ -143,4 +143,4 @@ Save the final dictionary output in the variable named result.
 
 🎯 PRIORITY:
 Emphasize source authority, data reliability, and traceability. Accuracy is more important than coverage.
-"""
+"""  # noqa: E501

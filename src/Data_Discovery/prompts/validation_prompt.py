@@ -1,4 +1,8 @@
-def generate_validation_prompt(company_name, source_type, url, year, source_description, confidence):
+"""Validation prompt for financial data sources."""
+
+
+def generate_validation_prompt(company_name: str, source_type: str, url: str, year: int, source_description: str, confidence: str) -> str:
+    """Generate a prompt for validating financial data sources."""
     return f"""
             You are an EXPERT VALIDATOR of financial sources for multinational companies.
 

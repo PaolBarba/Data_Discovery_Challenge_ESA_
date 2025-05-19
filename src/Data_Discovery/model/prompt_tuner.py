@@ -6,6 +6,7 @@ import time
 
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
+from google.generativeai.types import generation_types
 from prompts.base_prompt import base_prompt_improving
 from prompts.prompt_improving import improve_prompt
 from utils import load_config_yaml
@@ -30,7 +31,8 @@ class PromptTuner:
         self.current_prompt = initial_prompt_template or base_prompt_improving
         self.config = load_config_yaml("src/Data_Discovery/config/model_config/config.yaml")
 
-        self.tuning_history = []
+        self.tuning_history: list = []
+        self.max_retries = self.config["max_retries"]
         self.model = genai.GenerativeModel(self.config["model_name"])
 
     def generate_prompt(self, company_name: str, source_type: str) -> str:
@@ -63,12 +65,11 @@ class PromptTuner:
         # Improves the current prompt using feedback from Gemini
         return improve_prompt.format(report_url=report_url, company_name=company_name)
 
-    def call(self, prompt: str) -> str:
+    def call(self, prompt: str) -> generation_types.GenerateContentResponse | None:
         """Call the model with the given prompt and handle retries for quota errors."""
         retries = 0
-        max_retries = 5
 
-        while retries < max_retries:
+        while retries < self.max_retries:
             response = None
             try:
                 response = self.model.generate_content(prompt)
@@ -77,7 +78,7 @@ class PromptTuner:
                 # Try to extract retry delay from exception, or default to 60 seconds
                 delay = getattr(e, "retry_delay", 60)
                 delay = delay.seconds if hasattr(delay, "seconds") else 60
-                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
+                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, self.max_retries)
                 time.sleep(delay)
             except Exception as e:
                 logger.exception("Unhandled exception during model call: %s", e)  # noqa: TRY401
@@ -89,5 +90,5 @@ class PromptTuner:
 
             retries += 1
 
-        logger.error("Failed to get a response after %d retries.", max_retries)
+        logger.error("Failed to get a response after %d retries.", self.max_retries)
         return None

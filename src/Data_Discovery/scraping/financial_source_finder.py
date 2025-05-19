@@ -9,6 +9,7 @@ from pathlib import Path
 import google.generativeai as genai
 from model.result_validator import ResultValidator
 from scraping.scraping_challenge import WebScraperModule
+from utils import save_json_obj
 
 from Data_Discovery.model.prompt_tuner import PromptTuner
 
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 class FinancialSourcesFinder:
     """Classe principale che coordina il processo di ricerca delle fonti finanziarie."""
 
-    def __init__(self, api_key=None, max_tuning_iterations=3, validation_threshold=80):
+    def __init__(self, api_key: str | None = None, max_tuning_iterations: int = 3, validation_threshold: int = 80):
         """
         Initialize the finder with the necessary configurations.
 
@@ -42,7 +43,7 @@ class FinancialSourcesFinder:
         self.max_tuning_iterations = max_tuning_iterations
         self.validation_threshold = validation_threshold
 
-    def find_financial_source(self, company_name, source_type="Annual Report"):
+    def find_financial_source(self, company_name: str, source_type="Annual Report") -> dict:
         """
         Find the financial source for a company with automatic tuning.
 
@@ -84,10 +85,8 @@ class FinancialSourcesFinder:
         # Append the new result
         data.append(scraping_result)
 
-        # Save data as JSON
-        with Path.open(report_path, "w") as f:
-            # Prepare the data to save
-            json.dump(data, f, indent=4)
+        # Save the updated data
+        save_json_obj(data, report_path)
 
         # Validate the result
         # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
@@ -136,7 +135,7 @@ class FinancialSourcesFinder:
         # return final_result
         return scraping_result
 
-    def process_companies_batch(self, companies_batch, source_type):
+    def process_companies_batch(self, companies_batch: list, source_type: str = "Annual Report") -> list:
         """
         Process a batch of companies in parallel.
 
