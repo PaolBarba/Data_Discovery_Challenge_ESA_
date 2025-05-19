@@ -5,6 +5,8 @@ import logging
 import os
 import sys
 from pathlib import Path
+from time import time
+from tqdm import tqdm
 from typing import Any
 
 import google.generativeai as genai
@@ -88,52 +90,6 @@ class FinancialSourcesFinder:
 
         # Save the updated data
         save_json_obj(data, report_path)
-
-        # Validate the result
-        # validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
-
-        # # Automatic tuning loop
-        # iteration = 0
-        # while (
-        #     not validation_result.get("is_valid", False)
-        #     or validation_result.get("validation_score", 0) < self.validation_threshold
-        # ) and iteration < self.max_tuning_iterations:
-        #     iteration += 1
-        #     logger.info(f"Tuning iteration {iteration} for {company_name}")
-
-        #     # Improve the prompt
-        #     self.prompt_tuner.improve_prompt(company_name, source_type, scraping_result, validation_result)
-
-        #     # Retry scraping
-        #     url, year, source_description, confidence = self.scraper.scrape_financial_sources(company_name, source_type)
-
-        #     # Update the result
-        #     scraping_result = {
-        #     "url": url,
-        #     "year": year,
-        #     "source_description": source_description,
-        #     "confidence": confidence,
-        #     }
-
-        #     # Revalidate
-        #     validation_result = self.validator.validate_result(company_name, source_type, scraping_result)
-
-        # # Prepare the final result
-        # final_result = {
-        #     "company_name": company_name,
-        #     "source_type": source_type,
-        #     "url": url,
-        #     "year": year,
-        #     "source_description": source_description,
-        #     "confidence": confidence,
-        #     "validation_score": validation_result.get("validation_score", 0),
-        #     "is_valid": validation_result.get("is_valid", False),
-        #     "tuning_iterations": iteration,
-        #     "feedback": validation_result.get("feedback", ""),
-        # }
-
-        # logger.info(f"Search completed for {company_name}: {'VALID' if final_result['is_valid'] else 'NOT VALID'}")
-        # return final_result
         return scraping_result
 
     def process_companies_batch(self, companies_batch: list[Any], source_type: str = "Annual Report") -> list[Any]:
@@ -150,7 +106,9 @@ class FinancialSourcesFinder:
         list: Results for the batch.
         """
         results = []
-        for company in companies_batch:
+        start_time = time()
+        for company in tqdm(companies_batch, desc="Processing companies", colour="green"):
             result = self.find_financial_source(company, source_type)
             results.append(result)
+        logger.info("Batch processing completed in %.2f seconds", time() - start_time)
         return results

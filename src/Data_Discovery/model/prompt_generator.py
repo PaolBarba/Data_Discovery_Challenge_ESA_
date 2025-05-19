@@ -35,6 +35,7 @@ class PromptGenerator:
         self.web_scraping_prompt_template = web_scraping_prompt
 
         # Counter for tracking the number of optimizations per company
+        self.max_retries = self.config["max_retries"]
         self.optimization_counter = {}
         self.model = genai.GenerativeModel(self.config["model_name"])
 
@@ -434,9 +435,8 @@ class PromptGenerator:
     def call(self, prompt: str) -> generation_types.GenerateContentResponse | None:
         """ "Call the model with retry logic for handling quota issues."""  # noqa: D210
         retries = 0
-        max_retries = 5
 
-        while retries < max_retries:
+        while retries < self.max_retries:
             response = None
             try:
                 response = self.model.generate_content(prompt)
@@ -445,7 +445,7 @@ class PromptGenerator:
                 # Try to extract retry delay from exception, or default to 60 seconds
                 delay = getattr(e, "retry_delay", 60)
                 delay = delay.seconds if hasattr(delay, "seconds") else 60
-                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, max_retries)
+                logger.info("Retrying in %d seconds... (attempt %d of %d)", delay, retries + 1, self.max_retries)
                 time.sleep(delay)
             except Exception:
                 logger.exception("Unhandled exception during model call")
@@ -457,5 +457,5 @@ class PromptGenerator:
 
             retries += 1
 
-        logger.error("Failed to get a response after %d retries.", max_retries)
+        logger.error("Failed to get a response after %d retries.", self.max_retries)
         return None
