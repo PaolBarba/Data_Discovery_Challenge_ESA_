@@ -6,12 +6,12 @@ import os
 import sys
 from pathlib import Path
 from time import time
-from tqdm import tqdm
 from typing import Any
 
 import google.generativeai as genai
 from model.result_validator import ResultValidator
 from scraping.scraping_challenge import WebScraperModule
+from tqdm import tqdm
 from utils import save_json_obj
 
 from Data_Discovery.model.prompt_tuner import PromptTuner
@@ -46,6 +46,26 @@ class FinancialSourcesFinder:
         self.max_tuning_iterations = max_tuning_iterations
         self.validation_threshold = validation_threshold
 
+    def _load_existing_report(self, report_path: Path) -> dict[str, Any]:
+        """
+        Load an existing report from the specified path.
+
+        Args:
+            report_path (Path): Path to the report file.
+
+        Returns
+        -------
+            dict: Loaded report data.
+        """
+        with report_path.open("r") as f:
+            try:
+                data = json.load(f)
+                if not isinstance(data, list):
+                    data = [data]  # Wrap single dict into a list
+            except json.JSONDecodeError:
+                data = []
+        return data
+
     def find_financial_source(self, company_name: str, source_type: str = "Annual Report") -> dict[str, Any]:
         """
         Find the financial source for a company with automatic tuning.
@@ -60,10 +80,15 @@ class FinancialSourcesFinder:
         """
         logger.info("Starting search for %s (type: %s)", company_name, source_type)
 
-        url, year, confidence , source_description, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
+        report_dir = Path("reports") / company_name
+        report_path = report_dir / "report_data.json"
+        # Check if the report already exists
+        if report_path.exists():
+            logger.info("Report already exists for %s, loading existing report", company_name)
+            return self._load_existing_report(report_path)
 
-        report_dir = os.path.join("reports", company_name)  #  # noqa: PTH118
-        report_path = os.path.join(report_dir, "report_data.json")  # noqa: PTH118
+        url, year, confidence, source_description, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
+
         # Ensure the directory exists
         os.makedirs(report_dir, exist_ok=True)  # noqa: PTH103
         scraping_result = {
