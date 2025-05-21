@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--source-type", default="Annual Report", help="Type of financial source to search for")
     parser.add_argument("--api-key", help="Gemini API key (optional if set as an environment variable)")
     parser.add_argument("--threads", type=int, default=4, help="Number of threads for parallel processing")
-    parser.add_argument("--batch-size", type=int, default=10, help="Batch size for processing")
+    parser.add_argument("--batch-size", type=int, default=5, help="Batch size for processing")
     parser.add_argument("--validation-threshold", type=int, default=80, help="Validation threshold (0-100)")
     parser.add_argument("--max-tuning", type=int, default=3, help="Maximum number of tuning iterations")
 

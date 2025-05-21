@@ -80,10 +80,18 @@ class FinancialSourcesFinder:
         report_dir = Path("reports") / company_name
         report_path = report_dir / "report_data.json"
         # Check if the report already exists, Comment the following line for a full run
-        # if report_path.exists():
+        # genereate_code_path = Path("generated_code") / f"{company_name}_Annual Report.py"
+        # if genereate_code_path.exists():
         #     logger.info("Report already exists for %s, loading existing report", company_name)
         #     return self._load_existing_report(report_path)
 
+        if report_path.exists():
+            logger.info("Report already exists for %s, loading existing report", company_name)
+            self._load_existing_report(report_path)
+            data = self._load_existing_report(report_path)
+            if len(data) > 5:
+                logging.info("Report already exists for %s, loading existing report", company_name)
+                return data
         url, year, confidence, source_description, page_status = self.scraper.scrape_financial_sources(company_name, source_type)
 
         # Ensure the directory exists
