@@ -1,4 +1,4 @@
-# 🛰️ Data Discovery Challenge - ESA
+# Data Discovery Challenge - ESA
 
 A modular pipeline for dataset discovery and submission, built for the European Space Agency's data challenge. This project integrates scraping, prompt engineering, model interaction, and a submission framework.
 
