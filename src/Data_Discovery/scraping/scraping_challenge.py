@@ -162,7 +162,7 @@ class WebScraperModule:
                 attempt += 1
 
         logger.info("Falling back to AI web scraping for '%s'", company_name)
-        attempt_web_scraping  = 0
+        attempt_web_scraping = 0
         while attempt_web_scraping < self.max_retries:
             logger.info("Attempting AI web scraping for '%s' (attempt %d)", company_name, attempt_web_scraping + 1)
             data = self.ai_web_scraping(company_name, source_type)
@@ -179,5 +179,5 @@ class WebScraperModule:
         if not data:
             return None, None, None, None, "Page not found"
         if len(data.values()) != 5:
-                return None, None, None, None, "Page not found"
+            return None, None, None, None, "Page not found"
         return tuple(data.values())

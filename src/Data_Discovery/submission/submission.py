@@ -33,9 +33,10 @@ class DataDiscoverySubmission:
             found_entries = [item for item in data if item.get("page_status") == "Page found"]
             found_entries.sort(
                 key=lambda x: (
-                    -int(x.get("year")) if x.get("year", "").isdigit() else -1,
-                    -CONFIDENCE_ORDER.get(x.get("confidence", "").upper(), -1)
-                    ))
+                    -int(x.get("year")) if isinstance(x.get("year"), str) and x.get("year").isdigit() else -1,
+                    -CONFIDENCE_ORDER.get(x.get("confidence", "").upper(), -1),
+                )
+            )
             company_data[file] = found_entries[:5]  # limit to top 5
 
             urls = set()

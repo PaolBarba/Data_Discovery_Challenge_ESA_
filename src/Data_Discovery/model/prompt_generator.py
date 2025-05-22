@@ -1,6 +1,7 @@
 """Prompt generator for financial data source finder."""
 
 import logging
+import secrets
 import sys
 import time
 from urllib.parse import urlparse
@@ -37,7 +38,17 @@ class PromptGenerator:
         # Counter for tracking the number of optimizations per company
         self.max_retries = self.config["max_retries"]
         self.optimization_counter = {}
-        self.model = genai.GenerativeModel(self.config["model_name"])
+        self.models_name = self.config["models_name"]
+
+    def inizialize_model(self):
+        """
+        Initialize the model with the selected model name.
+
+        This method is called to set up the model for generating content.
+        """
+        self.selected_model_name = secrets.choice(self.models_name)
+        logger.info("Selected model: %s", self.selected_model_name)
+        self.model = genai.GenerativeModel(self.selected_model_name)
 
     def generate_prompt(self, company_name: str, source_type: str) -> str:
         """
@@ -89,9 +100,7 @@ class PromptGenerator:
         optimization_request = self._create_optimization_request(company_name, feedback, current_prompt, scraping_results)
 
         try:
-            # Ask Google Gemini to optimize the prompt
-            model = genai.GenerativeModel(self.config["model_name"])
-            response = model.generate_content(
+            response = self.model.generate_content(
                 optimization_request,
                 generation_config={
                     "temperature": self.config["temperature"],
@@ -435,7 +444,7 @@ class PromptGenerator:
     def call(self, prompt: str) -> generation_types.GenerateContentResponse | None:
         """ "Call the model with retry logic for handling quota issues."""  # noqa: D210
         retries = 0
-
+        self.inizialize_model()
         while retries < self.max_retries:
             response = None
             try:

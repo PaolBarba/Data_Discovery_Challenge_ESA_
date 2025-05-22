@@ -9,12 +9,9 @@ from time import time
 from typing import Any
 
 import google.generativeai as genai
-from model.result_validator import ResultValidator
 from scraping.scraping_challenge import WebScraperModule
 from tqdm import tqdm
 from utils import save_json_obj
-
-from Data_Discovery.model.prompt_tuner import PromptTuner
 
 logging.basicConfig(
     level=logging.INFO,
