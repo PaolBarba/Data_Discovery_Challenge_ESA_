@@ -6,6 +6,8 @@ A modular pipeline for dataset discovery and submission, built for the European 
 
 ## 📁 Project Structure
 
+```text
+
 Data_Discovery_Challenge_ESA_/
 ├── src/
 │   ├── Data_Discovery/
@@ -57,6 +59,7 @@ Data_Discovery_Challenge_ESA_/
 ├── pyproject.toml                      # Project metadata and dependencies
 └── README.md                           # Project documentation
 
+```
 
 
 
