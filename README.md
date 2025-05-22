@@ -95,13 +95,6 @@ The code is structured into the following main classes:
   - Generates the initial prompt based on a template and company-specific information (if available).
   - Iteratively modifies the prompt (`optimize_prompt`) based on feedback received from the `Validator`, asking another AI instance to suggest improvements.
 
-### `Validator` Not yet implemented
-
-- **Purpose:** Assess the accuracy and specificity of the results (URL and year) returned by the search AI.
-- **Key Functions:**
-  - Uses a specific “judge” prompt to ask Gemini whether the URL is correct, relevant, specific to the request, and whether the year is accurate and the most recent.
-  - Provides structured feedback (`validate_result`) used for prompt optimization.
-
 ### `FinancialSourceFinder`
 
 - **Purpose:** Orchestrate the entire workflow.
@@ -128,7 +121,7 @@ For each company in the input list:
     - **Naive search** Not yet implemented
    - **Parsing:** The AI’s JSON response is parsed.
 
-   - **Validation:** If the AI returned a result, the `Validator` (a separate AI call) evaluates the result's quality: (Not yet implemented)
+   - **Validation:** If the AI returned a result
      - Is the URL accessible?
      - Relevant?
      - Specific?
