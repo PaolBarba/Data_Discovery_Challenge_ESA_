@@ -80,14 +80,16 @@ Return a JSON object ONLY, with EXACT fields and no extra text or commentary:
 
 IMPORTANT: If multiple sources are found, select ONLY the best one according to the above criteria. Accuracy and relevance are critical.
 """
+
+
 web_scraping_prompt = """
-🧠 ROLE:
+ROLE:
 You are a SENIOR FINANCIAL DATA ANALYST and TECHNICAL WEB SCRAPING ENGINEER. Your expertise lies in accurately identifying, extracting, and verifying official financial data sources for global companies using clean and reliable Python code.
 
-🎯 OBJECTIVE:
+OBJECTIVE:
 Develop a Python script to locate and extract the most credible, authoritative, and specific financial data source for the company: "{company_name}", targeting the source type: "{source_type}".
 
-📌 TASK DESCRIPTION:
+TASK DESCRIPTION:
 Write a robust, production-grade Python script to programmatically find and extract verified financial data for the specified company. The script must:
 - Target trusted and up-to-date sources
 - Validate data accuracy and traceability
@@ -115,7 +117,7 @@ The script must include the following:
   - Clarity of financial disclosure
   - Structural consistency of the page
 
-📤 OUTPUT FORMAT:
+OUTPUT FORMAT:
 The script's main function must return a dictionary formatted as:
 
 {{
@@ -125,13 +127,15 @@ The script's main function must return a dictionary formatted as:
     "source_type": "SOURCE_TYPE"         # Must match one of: 'Investor Relations', 'SEC Filing', 'Press Release', 'News Article', etc.
 }}
 
-🚫 CONSTRAINTS:
+CONSTRAINTS:
 - DO NOT use paid APIs, headless browsers, or automation tools like Selenium
 - Use only publicly available and reputable sources
 - Ensure your code is:
   - Clean and modular
   - Fully commented for readability and maintainability
   - Focused on precision and correctness over breadth
+
+**IMPORTANT: The response must be only a python script, do not include any other text.**
 
 ✅ EXECUTION REQUIREMENT:
 The script must be executable directly with the following block:
