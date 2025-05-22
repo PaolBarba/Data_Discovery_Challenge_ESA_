@@ -85,7 +85,6 @@ The code is structured into the following main classes:
   - Find the company's official website.
   - Locate the "Investor Relations" (IR) page.
   - Extract links to financial reports (PDFs, etc.) from web pages.
-  - Search for SEC filings (e.g., 10-K, 10-Q) on EDGAR.
   - Utilizes `requests` and `BeautifulSoup`, with retry handling and user-agent rotation.
 
 ### `PromptGenerator`
