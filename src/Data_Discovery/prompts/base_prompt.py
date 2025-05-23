@@ -134,7 +134,7 @@ CONSTRAINTS:
   - Clean and modular
   - Fully commented for readability and maintainability
   - Focused on precision and correctness over breadth
-
+- The code must be fast to execute, the request must have timeout of 5 seconds.
 **IMPORTANT: The response must be only a python script, do not include any other text.**
 
 ✅ EXECUTION REQUIREMENT:

@@ -85,7 +85,7 @@ class WebScraperModule:
         prompt = self.prompt_generator.generate_web_scraping_prompt(company_name, source_type)
         response = self.prompt_generator.call(prompt)
 
-        if not response or not response.text:
+        if response is None or not hasattr(response, "text") or not response.text:
             logger.warning("Empty AI scraping response for %s", company_name)
             return None
 
