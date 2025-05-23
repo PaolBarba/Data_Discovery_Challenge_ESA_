@@ -51,26 +51,53 @@ class DataDiscoverySubmission:
 
         return company_data
 
-    def popoluate_data(self) -> pd.DataFrame:
-        """Populate the dataset with up to 5 rows per company using sorted report entries."""
+    def populate_data(self) -> pd.DataFrame:
+        """Replace FIN_REP rows with discovered URLs, keeping only first record as FIN_REP, and preserve original order."""
         df_submission = self.dataset.copy()
         company_data = self.prepare_data()
+        
+        seen = set()
+        final_rows = []
 
-        new_rows = []
+        for idx, row in df_submission.iterrows():
+            name = row['NAME']
+            if name in seen:
+                continue
+            seen.add(name)
+            group = df_submission[df_submission['NAME'] == name]
+            
+            discovered_urls = company_data.get(name, [])
+            num_urls_to_add = min(5, len(discovered_urls))
 
-        for _idx, row in df_submission.iterrows():
-            name = row["NAME"]
-            if row["TYPE"] == "FIN_REP" and name in company_data:
-                entries = company_data[name]
-                for entry in entries:
-                    new_row = row.copy()
-                    new_row["SRC"] = entry.get("url")
-                    new_row["REFYEAR"] = entry.get("year")
-                    new_rows.append(new_row)
-            else:
-                new_rows.append(row)
+            if num_urls_to_add == 0:
+                final_rows.append(group)
+                continue
 
-        return pd.DataFrame(new_rows)
+            finrep_rows = group[group['TYPE'] == 'FIN_REP']
+            other_rows = group[group['TYPE'] != 'FIN_REP']
+
+            new_rows = []
+            for i in range(num_urls_to_add):
+                template = finrep_rows.iloc[0] if len(finrep_rows) > 0 else group.iloc[0]
+                new_row = template.copy()
+                entry = discovered_urls[i]
+                new_row['SRC'] = entry.get('url')
+                new_row['REFYEAR'] = entry.get('year')
+                new_row['TYPE'] = 'FIN_REP' if i == 0 else 'OTHER'
+                new_rows.append(new_row.to_frame().T)
+
+            new_rows_df = pd.concat(new_rows) if new_rows else pd.DataFrame()
+            max_other_rows = len(group) - num_urls_to_add
+            kept_other_rows = other_rows.head(max_other_rows)
+
+            company_df = pd.concat([new_rows_df, kept_other_rows])
+            final_rows.append(company_df)
+
+        if final_rows:
+            result_df = pd.concat(final_rows)
+            return result_df[df_submission.columns]
+        return pd.DataFrame(columns=df_submission.columns)
+
 
     def save_submission(self, df_submission: pd.DataFrame) -> None:
         """Save the prepared submission DataFrame to a CSV file."""
@@ -81,5 +108,5 @@ class DataDiscoverySubmission:
 
     def run(self) -> None:
         """Run the data preparation and submission process."""
-        df_submission = self.popoluate_data()
+        df_submission = self.populate_data()
         self.save_submission(df_submission)
